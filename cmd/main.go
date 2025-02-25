@@ -9,7 +9,7 @@ func main() {
 	router := gin.Default()
 	router.RemoveExtraSlash = true
 
-	mainGroup := router.Group("")
+	mainGroup := router.Group("/ranktify")
 	{
 		route.UserRoutes(mainGroup)
 	}
