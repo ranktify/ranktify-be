@@ -1,0 +1,18 @@
+services:
+  ranktify:
+    container_name: "ranktify"
+    environment:
+      - "POSTGRES_USER=ranktifyUser"
+      - "POSTGRES_PASSWORD=concalma"
+      - "POSTGRES_DB=ranktify"
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
+    image: "postgres:17"
+    ipc: "private"
+    ports:
+      - "9090:5432/tcp"
+    restart: "always"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # this is going to set the user, the db and all the tables
+volumes:
+  postgres_data:
