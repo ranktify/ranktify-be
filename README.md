@@ -12,9 +12,14 @@ go mod tidy
 ## Running the Application
 
 1.  **Run the Application**:
-     Run the application:
+     Before running the application, we need to set if we are in local development or in production, to do that run one of the following `export` :
 
 ```bash
+# local development
+export APP_ENV=local
+# production mode
+export APP_ENV=prod
+#running the application
 go run cmd/main.go
 ```
 
