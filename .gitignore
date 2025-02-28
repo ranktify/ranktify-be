@@ -21,7 +21,6 @@
 
 # Local config files
 *.env
-*.env.*
 
 
 # OS generated files

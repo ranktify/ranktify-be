@@ -12,13 +12,18 @@ go mod tidy
 ## Running the Application
 
 1.  **Run the Application**:
-     Before running the application, we need to set if we are in local development or in production, to do that run one of the following `export` :
+     Before running the application, make sure to create .env file with the folliwing format:
+```python
+DB_HOST=localhost
+DB_PORT=9090
+DB_USER=ranktifyUser
+DB_PASSWORD=concalma
+DB_NAME=ranktify
+DB_SSLMODE=disable # For local development: disabled, production: required
+```
+And finall run the app:
 
 ```bash
-# local development
-export APP_ENV=local
-# production mode
-export APP_ENV=prod
 #running the application
 go run cmd/main.go
 ```
