@@ -1,16 +1,20 @@
 package route
 
 import (
-	"net/http"
+	"database/sql"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ranktify/ranktify-be/internal/dao"
+	"github.com/ranktify/ranktify-be/internal/handler"
 )
 
-func UserRoutes(group *gin.RouterGroup) {
+func UserRoutes(group *gin.RouterGroup, db *sql.DB) {
+	userDAO := dao.NewUserDAO(db)
+	userHandler := handler.NewUserHandler(userDAO)
+
 	users := group.Group("/user")
 	{
-		users.GET("/login", func(c *gin.Context) {
-			c.JSON(http.StatusAccepted, gin.H{"message": "HELLO RANKTIFY"})
-		})
+		users.POST("/login", userHandler.ValidateUser)
+		users.POST("/register", userHandler.CreateUser)
 	}
 }

@@ -12,9 +12,19 @@ go mod tidy
 ## Running the Application
 
 1.  **Run the Application**:
-     Run the application:
+     Before running the application, make sure to create .env file with the folliwing format:
+```python
+DB_HOST=localhost
+DB_PORT=9090
+DB_USER=ranktifyUser
+DB_PASSWORD=concalma
+DB_NAME=ranktify
+DB_SSLMODE=disable # For local development: disabled, production: required
+```
+And finall run the app:
 
 ```bash
+#running the application
 go run cmd/main.go
 ```
 
