@@ -16,5 +16,9 @@ func UserRoutes(group *gin.RouterGroup, db *sql.DB) {
 	{
 		users.POST("/login", userHandler.ValidateUser)
 		users.POST("/register", userHandler.CreateUser)
+		users.GET("/:id", userHandler.GetUserByID)
+		users.GET("/", userHandler.GetAllUsers)
+		users.PUT("/:id", userHandler.UpdateUserByID)
+		users.DELETE("/:id", userHandler.DeleteUserByID)
 	}
 }
