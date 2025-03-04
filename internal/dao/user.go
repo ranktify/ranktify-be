@@ -66,11 +66,10 @@ func (dao *UserDAO) GetUserByID(id uint64) (*model.User, error) {
 		&user.LastName, &user.Email,
 	)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	return &user, nil
 }
-
 
 func (dao *UserDAO) GetAllUsers() ([]*model.User, error) {
 	query := `
@@ -80,7 +79,7 @@ func (dao *UserDAO) GetAllUsers() ([]*model.User, error) {
 	rows, err := dao.DB.Query(query)
 	if err != nil {
 		return nil, err
-	}	
+	}
 	defer rows.Close()
 
 	var users []*model.User
@@ -100,7 +99,6 @@ func (dao *UserDAO) GetAllUsers() ([]*model.User, error) {
 	return users, nil
 }
 
-
 func (dao *UserDAO) UpdateUserByID(id uint64, user *model.User) error {
 	query := `
 		UPDATE public.users
@@ -116,13 +114,15 @@ func (dao *UserDAO) UpdateUserByID(id uint64, user *model.User) error {
 	if err != nil {
 		return err
 	}
+
 	if rowsAffected == 0 {
-		return fmt.Errorf("no user found with id %d", id)
+		return sql.ErrNoRows
 	}
+
 	return nil
 }
 
-func (dao *UserDAO) DeleteUserByID(id uint64) error{
+func (dao *UserDAO) DeleteUserByID(id uint64) error {
 	query := `
 		DELETE FROM public.users
 		WHERE id = $1
@@ -136,7 +136,7 @@ func (dao *UserDAO) DeleteUserByID(id uint64) error{
 		return fmt.Errorf("error checking rows affected: %v", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("no user found with id %d", id)
+		return sql.ErrNoRows
 	}
 	return nil
 }

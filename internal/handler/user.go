@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -82,8 +83,12 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 	}
 	user, err := h.DAO.GetUserByID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to retrieve user"})
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User with id %d not found", userID)})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		}
+
 		return
 	}
 	c.JSON(http.StatusOK, user)
@@ -118,7 +123,11 @@ func (h *UserHandler) UpdateUserByID(c *gin.Context) {
 	}
 	err = h.DAO.UpdateUserByID(userID, &user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User with id %d not found", userID)})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
@@ -133,8 +142,11 @@ func (h *UserHandler) DeleteUserByID(c *gin.Context) {
 	}
 	err = h.DAO.DeleteUserByID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to Delete user"})
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User with id %d not found", userID)})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Delete user"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": "User Deleted Succesfully"})
