@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
@@ -70,4 +72,82 @@ func (h *UserHandler) ValidateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": "Succesfully authenticated"})
+}
+
+func (h *UserHandler) GetUserByID(c *gin.Context) {
+	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	user, err := h.DAO.GetUserByID(userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User with id %d not found", userID)})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		}
+
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) GetAllUsers(c *gin.Context) {
+	users, err := h.DAO.GetAllUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve users"})
+		return
+	}
+	if len(users) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "No users found"})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+func (h *UserHandler) UpdateUserByID(c *gin.Context) {
+	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	var user model.User
+	if err := c.Bind(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data"})
+		return
+	}
+	err = h.DAO.UpdateUserByID(userID, &user)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User with id %d not found", userID)})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+}
+
+func (h *UserHandler) DeleteUserByID(c *gin.Context) {
+	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	err = h.DAO.DeleteUserByID(userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("User with id %d not found", userID)})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Delete user"})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": "User Deleted Succesfully"})
 }
