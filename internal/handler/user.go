@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
+	"github.com/ranktify/ranktify-be/internal/jwt"
 	"github.com/ranktify/ranktify-be/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -44,8 +45,12 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	jwtToken := jwt.CreateToken(user)
 
-	c.JSON(http.StatusCreated, gin.H{"success": fmt.Sprintf("Created user with id: %d", user.Id)})
+	c.JSON(http.StatusCreated, gin.H{
+		"success": fmt.Sprintf("Created user with id: %d", user.Id),
+		"token":   jwtToken,
+	})
 }
 
 func (h *UserHandler) ValidateUser(c *gin.Context) {
@@ -71,7 +76,11 @@ func (h *UserHandler) ValidateUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": "Succesfully authenticated"})
+	jwtToken := jwt.CreateToken(*dbUser)
+	c.JSON(http.StatusCreated, gin.H{
+		"success": "Succesfully authenticated",
+		"token":   jwtToken,
+	})
 }
 
 func (h *UserHandler) GetUserByID(c *gin.Context) {
