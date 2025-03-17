@@ -16,7 +16,7 @@ func GenerateJWTKeys() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("JWT_TOKEN_KEY=\"%s\"\n", base64.StdEncoding.EncodeToString(accessKey))
+	fmt.Printf("JWT_ACCESS_KEY=\"%s\"\n", base64.StdEncoding.EncodeToString(accessKey))
 
 	refreshKey := make([]byte, 32)
 	_, err = rand.Read(refreshKey)
