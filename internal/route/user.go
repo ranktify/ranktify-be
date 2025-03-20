@@ -7,11 +7,15 @@ import (
 	"github.com/ranktify/ranktify-be/internal/dao"
 	"github.com/ranktify/ranktify-be/internal/handler"
 	"github.com/ranktify/ranktify-be/internal/middleware"
+	"github.com/ranktify/ranktify-be/internal/service"
 )
 
 func UserRoutes(group *gin.RouterGroup, db *sql.DB) {
-	userDAO := dao.NewUserDAO(db)
-	userHandler := handler.NewUserHandler(userDAO)
+	userService := service.NewUserService(
+		dao.NewUserDAO(db),
+		dao.NewTokensDAO(db),
+	)
+	userHandler := handler.NewUserHandler(userService)
 
 	users := group.Group("/user")
 	{
