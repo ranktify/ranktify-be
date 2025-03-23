@@ -113,7 +113,22 @@ func RefreshTokens(refreshTokenString string, user model.User) (string, string, 
 	return accessTokenString, newRefreshTokenString, nil
 }
 
-// extracts the "jti" and the "user_id" claim from a refresh token. To be used for queries in storage
+// Parses a *jwt.Token. Returns a jwt.MapClaims to be used in middleware on success.
+func ParseTokenClaims(jwtToken *jwt.Token) (jwt.MapClaims, error) {
+	claims, ok := jwtToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("error extracting claims from token")
+	}
+
+	return claims, nil
+}
+
+// Validates and parses refresh token claims. Returns a model.JWTRefreshToken on success,
+// with the following members filled:
+// - UserID
+// - JTI
+// - ExpiresAt
+// - RefreshToken
 func ParseRefreshTokenClaims(tokenString string) (*model.JWTRefreshToken, error) {
 	token, err := validateToken(tokenString, getRefreshKey())
 	if err != nil {
@@ -138,10 +153,16 @@ func ParseRefreshTokenClaims(tokenString string) (*model.JWTRefreshToken, error)
 	if !ok {
 		return nil, fmt.Errorf("error extracting exp from token")
 	}
+	// hashedRefreshToken, err := bcrypt.GenerateFromPassword([]byte(tokenString), 11)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	rt := &model.JWTRefreshToken{
-		UserID:    uint64(userId),
-		JTI:       jti,
-		ExpiresAt: time.Unix(int64(exp), 0),
+		UserID:       uint64(userId),
+		JTI:          jti,
+		ExpiresAt:    time.Unix(int64(exp), 0),
+		RefreshToken: tokenString,
 	}
 
 	return rt, nil

@@ -48,7 +48,16 @@ func (s *UserService) CreateUser(user *model.User) (int, content) {
 	}
 
 	accessToken, refreshToken := jwt.CreateTokens(*user)
-	// TODO: Store the rt in storage or rotate
+
+	rt, err := jwt.ParseRefreshTokenClaims(refreshToken)
+	if err != nil {
+		return http.StatusInternalServerError, content{"error": err.Error()}
+	}
+	err = s.TokensDAO.SaveJWTRefreshToken(rt)
+	if err != nil {
+		return http.StatusInternalServerError, content{"error": err.Error()}
+	}
+
 	return http.StatusCreated, content{
 		"success":       fmt.Sprintf("Created user with id: %d", user.Id),
 		"access_token":  accessToken,
@@ -71,10 +80,17 @@ func (s *UserService) ValidateUser(user *model.User) (int, content) {
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password))
 	if err != nil {
 		return http.StatusUnauthorized, content{"error": "Password is incorrect"}
-
 	}
 
 	accessToken, refreshToken := jwt.CreateTokens(*dbUser)
+	rt, err := jwt.ParseRefreshTokenClaims(refreshToken)
+	if err != nil {
+		return http.StatusInternalServerError, content{"error": err.Error()}
+	}
+	err = s.TokensDAO.SaveJWTRefreshToken(rt)
+	if err != nil {
+		return http.StatusInternalServerError, content{"error": err.Error()}
+	}
 	return http.StatusOK, content{
 		"success":       fmt.Sprintf("Logged in user with id: %d", dbUser.Id),
 		"access_token":  accessToken,

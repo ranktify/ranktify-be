@@ -33,7 +33,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		// TODO: We can extract the claims from the acess token and add it to the *gin.Context
+		// claims, err := jwt.ParseAccessTokenClaims()
 		fmt.Printf("Token verified: %+v\\n", token.Claims)
 		c.Next()
 	}
