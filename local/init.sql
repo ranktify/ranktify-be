@@ -81,5 +81,5 @@ ALTER TABLE songs OWNER TO ranktifyUser;
 ALTER TABLE friend_requests OWNER TO ranktifyUser;
 ALTER TABLE friends OWNER TO ranktifyUser;
 ALTER TABLE rankings OWNER TO ranktifyUser;
-ALTER TABLE jwt_tokens OWNER TO ranktifyUser;
-ALTER TABLE spotify_tokens OWNER TO ranktifyUser;
+ALTER TABLE jwt_refresh_tokens OWNER TO ranktifyUser;
+ALTER TABLE spotify_refresh_tokens OWNER TO ranktifyUser;
