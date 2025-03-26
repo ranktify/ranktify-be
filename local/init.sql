@@ -58,9 +58,28 @@ CREATE TABLE rankings (
 -- Index for Faster Ranking Queries
 CREATE INDEX idx_rankings_user_song ON rankings(user_id, song_id);
 
+-- Tracks JWT refresh tokens and rotations
+CREATE TABLE jwt_refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    jti TEXT NOT NULL, -- new column for the token identifier
+    refresh_token TEXT NOT NULL, 
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE spotify_refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    refresh_token TEXT NOT NULL, 
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 --give ownership to ranktifyUser
 ALTER TABLE users OWNER TO ranktifyUser;
 ALTER TABLE songs OWNER TO ranktifyUser;
 ALTER TABLE friend_requests OWNER TO ranktifyUser;
 ALTER TABLE friends OWNER TO ranktifyUser;
 ALTER TABLE rankings OWNER TO ranktifyUser;
+ALTER TABLE jwt_refresh_tokens OWNER TO ranktifyUser;
+ALTER TABLE spotify_refresh_tokens OWNER TO ranktifyUser;
