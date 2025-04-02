@@ -150,7 +150,7 @@ func ParseRefreshTokenClaims(tokenString string) (*model.JWTRefreshToken, error)
 	}
 	rt := &model.JWTRefreshToken{
 		UserID:       uint64(claims.UserID),
-		JTI:          claims.Issuer,
+		JTI:          claims.ID,
 		ExpiresAt:    claims.ExpiresAt.Time,
 		RefreshToken: tokenString,
 	}
