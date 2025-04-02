@@ -18,13 +18,27 @@ func getRefreshKey() []byte {
 	return []byte(os.Getenv("JWT_REFRESH_KEY"))
 }
 
+func getIssuerString() string {
+	return os.Getenv("JWT_ISSUER")
+}
+
+type customClaims struct {
+	jwt.RegisteredClaims
+	UserID float64 `json:"user_id"`
+}
+
 // validate a token using the provided secret key, assumes that the signing method was HS256.
 // If valid returns a *jwt.Token and nil, otherwise nil and error.
-func validateToken(tokenString string, tokenSecretKey []byte) (*jwt.Token, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return tokenSecretKey, nil
-	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
-
+func validateToken(tokenString string, tokenSecretKey []byte, issuer string) (*jwt.Token, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&customClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return tokenSecretKey, nil
+		},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+		jwt.WithIssuer(issuer),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +55,8 @@ func createAccessToken(user model.User) (string, error) {
 		"user_id":    user.Id,
 		"username":   user.Username,
 		"email":      user.Email,
-		"iss":        time.Now().Unix(),                       // Issued date
+		"iss":        getIssuerString(),
+		"iat":        time.Now().Unix(),
 		"exp":        time.Now().Add(15 * time.Minute).Unix(), // Expiry date: 15 minutes
 		"jti":        uuid.New().String(),
 	})
@@ -57,7 +72,8 @@ func createAccessToken(user model.User) (string, error) {
 func createRefreshToken(user model.User) (string, error) {
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.Id,
-		"iss":     time.Now().Unix(),
+		"iss":     getIssuerString(),
+		"iat":     time.Now().Unix(),
 		"exp":     time.Now().Add(24 * time.Hour * 30).Unix(), // Expires in a month
 		"jti":     uuid.New().String(),                        // Unique identifier for the token
 	})
@@ -86,7 +102,8 @@ func CreateTokens(user model.User) (string, string) {
 // validates the access token using the access key env.
 func ValidateAccessToken(tokenString string) (*jwt.Token, error) {
 	accessKey := getAccessKey()
-	token, err := validateToken(tokenString, accessKey)
+	iss := getIssuerString()
+	token, err := validateToken(tokenString, accessKey, iss)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +114,8 @@ func ValidateAccessToken(tokenString string) (*jwt.Token, error) {
 // and new refresh token to be rotated in storage.
 func RefreshTokens(refreshTokenString string, user model.User) (string, string, error) {
 	refreshKey := getRefreshKey()
-	_, err := validateToken(refreshTokenString, refreshKey)
+	iss := getIssuerString()
+	_, err := validateToken(refreshTokenString, refreshKey, iss)
 	if err != nil {
 		return "", "", fmt.Errorf("refresh token failed to validate")
 	}
@@ -113,16 +131,6 @@ func RefreshTokens(refreshTokenString string, user model.User) (string, string, 
 	return accessTokenString, newRefreshTokenString, nil
 }
 
-// Parses a *jwt.Token. Returns a jwt.MapClaims to be used in middleware on success.
-func ParseTokenClaims(jwtToken *jwt.Token) (jwt.MapClaims, error) {
-	claims, ok := jwtToken.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, fmt.Errorf("error extracting claims from token")
-	}
-
-	return claims, nil
-}
-
 // Validates and parses refresh token claims. Returns a model.JWTRefreshToken on success,
 // with the following members filled:
 // - UserID
@@ -130,38 +138,20 @@ func ParseTokenClaims(jwtToken *jwt.Token) (jwt.MapClaims, error) {
 // - ExpiresAt
 // - RefreshToken
 func ParseRefreshTokenClaims(tokenString string) (*model.JWTRefreshToken, error) {
-	token, err := validateToken(tokenString, getRefreshKey())
+	rk := getRefreshKey()
+	iss := getIssuerString()
+	token, err := validateToken(tokenString, rk, iss)
 	if err != nil {
 		return nil, err
 	}
-	claims, ok := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(*customClaims)
 	if !ok {
 		return nil, fmt.Errorf("error extracting claims from token")
 	}
-
-	jti, ok := claims["jti"].(string)
-	if !ok {
-		return nil, fmt.Errorf("error extracting jti from token")
-	}
-
-	userId, ok := claims["user_id"].(float64)
-	if !ok {
-		return nil, fmt.Errorf("error extracting user_id from token")
-	}
-
-	exp, ok := claims["exp"].(float64)
-	if !ok {
-		return nil, fmt.Errorf("error extracting exp from token")
-	}
-	// hashedRefreshToken, err := bcrypt.GenerateFromPassword([]byte(tokenString), 11)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	rt := &model.JWTRefreshToken{
-		UserID:       uint64(userId),
-		JTI:          jti,
-		ExpiresAt:    time.Unix(int64(exp), 0),
+		UserID:       uint64(claims.UserID),
+		JTI:          claims.Issuer,
+		ExpiresAt:    claims.ExpiresAt.Time,
 		RefreshToken: tokenString,
 	}
 
