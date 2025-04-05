@@ -30,6 +30,7 @@ func main() {
 	mainGroup := router.Group("/ranktify")
 	{
 		route.UserRoutes(mainGroup, db)
+		route.FriendRoutes(mainGroup, db)
 	}
 
 	router.Run("localhost:8080")
