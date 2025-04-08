@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
 )
@@ -101,31 +102,46 @@ func (h *FriendHandler) ProcessFriendRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid action. Must be 'accept' or 'reject'"})
 		return
 	}
-	// Process the friend request
-	err = h.DAO.ProcessFriendRequest(userID, requestID, requestBody.Action)
+	// Verify the friend request first
+	receiverID, err := h.DAO.VerifyFriendRequest(requestID, userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Friend request not found or does not belong to the user"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process friend request"})
-		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Friend request not found or invalid"})
 		return
+	} else {
+		if requestBody.Action == "accept" {
+			// Accept the friend request and add them as friends
+			err = h.DAO.AcceptFriendRequest(userID, receiverID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept the friend request"})
+				return
+			}
+			// Delete the friend request after successful acceptance
+			err = h.DAO.DeleteFriendRequest(requestID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the friend request"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Friend request accepted"})
+		} else if requestBody.Action == "reject" {
+			// Reject the friend request by deleting it
+			err := h.DAO.DeleteFriendRequest(requestID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject the friend request"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Friend request rejected"})
+		}
 	}
-	// Return appropriate success response
-	message := "Friend request declined successfully"
-	if requestBody.Action == "accept" {
-		message = "Friend request accepted successfully"
-	}
-	c.JSON(http.StatusOK, gin.H{"message": message})
+
 }
 
-func (h *FriendHandler) CancelFriendRequest(c *gin.Context) {
+func (h *FriendHandler) DeleteFriendRequest(c *gin.Context) {
 	requestID, err := strconv.ParseUint(c.Param("request_id"), 10, 64) // Extract request ID
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
 		return
 	}
-	err = h.DAO.CancelFriendRequest(requestID)
+	err = h.DAO.DeleteFriendRequest(requestID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Friend request not found or already canceled"})
