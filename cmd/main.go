@@ -31,6 +31,7 @@ func main() {
 	{
 		route.UserRoutes(mainGroup, db)
 		route.FriendRoutes(mainGroup, db)
+		route.ApiRoutes(mainGroup, db)
 	}
 
 	router.Run("localhost:8080")
