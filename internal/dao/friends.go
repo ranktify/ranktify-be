@@ -54,6 +54,40 @@ func (dao *FriendsDAO) GetFriends(id uint64) ([]model.User, error) {
 	return friends, nil
 }
 
+func (dao *FriendsDAO) GetFriendRequests(receiverID uint64) ([]model.FriendRequests, int, error) {
+	query := `
+		SELECT id, sender_id, receiver_id, request_date, status
+		FROM friend_requests
+		WHERE receiver_id = $1
+`
+	rows, err := dao.DB.Query(query, receiverID)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var friendRequests []model.FriendRequests
+	for rows.Next() {
+		var friendRequest model.FriendRequests
+		if err := rows.Scan(
+			&friendRequest.ID,
+			&friendRequest.SenderID,
+			&friendRequest.ReceiverID,
+			&friendRequest.RequestDate,
+			&friendRequest.Status,
+		); err != nil {
+			return nil, 0, err
+		}
+		friendRequests = append(friendRequests, friendRequest)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	friendCount := len(friendRequests)
+
+	return friendRequests, friendCount, nil
+}
+
 func (dao *FriendsDAO) DeleteFriendByID(userID uint64, friendID uint64) error {
 	query := `
 		DELETE FROM friends 
