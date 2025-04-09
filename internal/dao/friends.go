@@ -17,7 +17,7 @@ func NewFriendsDAO(db *sql.DB) *FriendsDAO {
 
 func (dao *FriendsDAO) GetFriends(id uint64) ([]model.User, error) {
 	query := `
-		SELECT u.id, u.username, u.password, u.first_name, u.last_name, 
+		SELECT u.id, u.username, u.first_name, u.last_name, 
 		u.email, u.role, u.created_at
 		FROM friends f
 		JOIN users u ON (f.user_id = $1 AND u.id = f.friend_id)
@@ -37,7 +37,6 @@ func (dao *FriendsDAO) GetFriends(id uint64) ([]model.User, error) {
 		if err := rows.Scan(
 			&user.Id,
 			&user.Username,
-			&user.Password,
 			&user.FirstName,
 			&user.LastName,
 			&user.Email,
@@ -87,20 +86,6 @@ func (dao *FriendsDAO) SendFriendRequest(userID uint64, receiverID uint64) error
 		return fmt.Errorf("error sending friend request: %v", err)
 	}
 	return nil
-}
-
-func (dao *FriendsDAO) VerifyFriendRequest(requestID uint64, userID uint64) (uint64, error) {
-	var receiverID uint64
-	err := dao.DB.QueryRow(`
-		SELECT receiver_id 
-		FROM friend_requests 
-		WHERE id = $1 AND sender_id = $2
-	`, requestID, userID).Scan(&receiverID)
-
-	if err != nil {
-		return 0, sql.ErrNoRows
-	}
-	return receiverID, nil
 }
 
 func (dao *FriendsDAO) AcceptFriendRequest(userID uint64, receiverID uint64) error {
