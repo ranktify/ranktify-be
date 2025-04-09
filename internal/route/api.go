@@ -10,9 +10,11 @@ import (
 
 func ApiRoutes(router *gin.RouterGroup, db *sql.DB) {
 	tokensHandler := handler.NewTokensHandler(dao.NewTokensDAO(db), dao.NewUserDAO(db))
+	spotifyHandler := handler.NewSpotifyHandler(dao.NewTokensDAO(db))
 
 	api := router.Group("/api")
 	{
 		api.POST("/refresh", tokensHandler.Refresh)
+		api.POST("/callback", spotifyHandler.AuthCallback)
 	}
 }
