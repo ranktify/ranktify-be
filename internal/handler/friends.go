@@ -104,7 +104,7 @@ func (h *FriendHandler) AcceptFriendRequest(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the friend request"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Friend request sent"})
+	c.JSON(http.StatusOK, gin.H{"message": "Friend request accepted"})
 
 }
 
