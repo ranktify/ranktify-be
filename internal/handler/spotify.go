@@ -23,6 +23,10 @@ func getSpotifySecret() string {
 	return os.Getenv("SPOTIFY_SECRET")
 }
 
+func getSpotifyRedirectURI() string {
+	return os.Getenv("SPOTIFY_REDIRECT_URI")
+}
+
 type SpotifyHandler struct {
 	DAO *dao.TokensDAO
 }
@@ -51,6 +55,35 @@ type SpotifyAccessTokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
+func fetchSpotifyToken(ctx context.Context, endpoint string, formData url.Values) (*SpotifyAccessTokenResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, BaseUrl+endpoint, strings.NewReader(formData.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	credentials := fmt.Sprintf("%s:%s", getSpotifyClientID(), getSpotifySecret())
+	encodedCredentials := base64.StdEncoding.EncodeToString([]byte(credentials))
+	req.Header.Add("Authorization", "Basic "+encodedCredentials)
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch access token, status code not ok")
+	}
+
+	var tokenResponse SpotifyAccessTokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		return nil, err
+	}
+	return &tokenResponse, nil
+}
+
 func (h *SpotifyHandler) AuthCallback(c *gin.Context) {
 	var authCallbackResponse SpotifyAuthCallbackResponse
 
@@ -66,57 +99,23 @@ func (h *SpotifyHandler) AuthCallback(c *gin.Context) {
 	// TODO: As soon as the frontend establishes a state then validate the state provided to prevent cross-origin requests
 
 	ctx := context.Background()
-	fmt.Println("State:", authCallbackResponse.State)
-
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("code", authCallbackResponse.Code)
-	formData.Set("redirect_uri", "exp://127.0.0.1:19000/")
+	formData.Set("redirect_uri", getSpotifyRedirectURI())
 
-	fmt.Println("Code", authCallbackResponse.Code)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, BaseUrl+"/api/token", strings.NewReader(formData.Encode()))
+	tokenResponse, err := fetchSpotifyToken(ctx, "/api/token", formData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	credentials := fmt.Sprintf("%s:%s", getSpotifyClientID(), getSpotifySecret())
-	encodedCredentials := base64.StdEncoding.EncodeToString([]byte(credentials))
-	req.Header.Add("Authorization", "Basic "+encodedCredentials)
-
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		fmt.Println(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("Status code:", resp.StatusCode)
-	if resp.StatusCode != http.StatusOK {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch access token"})
-		return
-	}
-
-	var tokenResponse SpotifyAccessTokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		fmt.Println(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	fmt.Println("Access Token: ", tokenResponse.AccessToken)
-	fmt.Println("Refresh Token: ", tokenResponse.RefreshToken)
-	fmt.Println("Expires in: ", tokenResponse.ExpiresIn)
-
 	// TODO: insert the refresh token in the database
+
 	c.JSON(http.StatusOK, gin.H{"access_token": tokenResponse.AccessToken})
 
 }
 
-func (h *SpotifyHandler) RequestAcessToken(c *gin.Context) {
+func (h *SpotifyHandler) refreshAccessToken(c *gin.Context) {
 	// Fetch the user spotify refresh token
 	// request an access token w/ refresh token
 	// return the access token to the client
