@@ -11,7 +11,7 @@ import (
 
 func ApiRoutes(router *gin.RouterGroup, db *sql.DB) {
 	tokensHandler := handler.NewTokensHandler(dao.NewTokensDAO(db), dao.NewUserDAO(db))
-	spotifyHandler := handler.NewSpotifyHandler(dao.NewTokensDAO(db))
+	spotifyHandler := handler.NewSpotifyHandler(dao.NewSpotifyDAO(db))
 
 	api := router.Group("/api")
 	{

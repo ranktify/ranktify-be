@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
+	"github.com/ranktify/ranktify-be/internal/model"
 )
 
 func getSpotifyClientID() string {
@@ -28,10 +29,10 @@ func getSpotifyRedirectURI() string {
 }
 
 type SpotifyHandler struct {
-	DAO *dao.TokensDAO
+	DAO *dao.SpotifyDAO
 }
 
-func NewSpotifyHandler(dao *dao.TokensDAO) *SpotifyHandler {
+func NewSpotifyHandler(dao *dao.SpotifyDAO) *SpotifyHandler {
 	return &SpotifyHandler{DAO: dao}
 }
 
@@ -42,9 +43,10 @@ var httpClient = &http.Client{
 }
 
 type SpotifyAuthCallbackResponse struct {
-	Code  string `json:"code"`  // An authorization code that can be exchanged for an access token.
-	State string `json:"state"` // The value of the state parameter supplied in the request.
-	Err   string `json:"error"` // The reason authorization failed, for example: "access_denied"
+	Code   string `json:"code"`  // An authorization code that can be exchanged for an access token.
+	State  string `json:"state"` // The value of the state parameter supplied in the request.
+	Err    string `json:"error"` // The reason authorization failed, for example: "access_denied"
+	UserID uint64 `json:"user_id"`
 }
 
 type SpotifyAccessTokenResponse struct {
@@ -109,10 +111,17 @@ func (h *SpotifyHandler) AuthCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// TODO: insert the refresh token in the database
+
+	rt := model.SpotifyRefreshToken{
+		UserID: authCallbackResponse.UserID,
+		Token:  tokenResponse.RefreshToken,
+	}
+	if err := h.DAO.SaveRefreshToken(rt); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"access_token": tokenResponse.AccessToken})
-
 }
 
 func (h *SpotifyHandler) refreshAccessToken(c *gin.Context) {
