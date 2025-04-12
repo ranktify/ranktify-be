@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
 	"github.com/ranktify/ranktify-be/internal/handler"
+	"github.com/ranktify/ranktify-be/internal/middleware"
 )
 
 func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
@@ -14,12 +15,15 @@ func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
 
 	friends := group.Group("/friends")
 	{
-		friends.GET("/:user_id/friend-list", friendsHandler.GetFriends)
-		friends.POST("/:user_id/friend-requests/:receiver_id/send", friendsHandler.SendFriendRequest)
-		friends.PUT("/friend-requests/accept/:id/:sender_id/:receiver_id", friendsHandler.AcceptFriendRequest)
-		friends.DELETE("/friend-requests/decline/:id/:sender_id/:receiver_id", friendsHandler.DeclineFriendRequest)
-		friends.DELETE("/:user_id/friend-requests/:request_id", friendsHandler.DeleteFriendRequest)
-		friends.DELETE("/:user_id/friends/:friend_id", friendsHandler.DeleteFriendByID)
+		friends.Use(middleware.AuthMiddleware())
+		// Routes to manage Friends
+		friends.GET("/:user_id", friendsHandler.GetFriends)
+		friends.DELETE("/:user_id/:friend_id", friendsHandler.DeleteFriendByID)
+		// Routes to manage Friend Requests
+		friends.POST("/send/:user_id/:receiver_id", friendsHandler.SendFriendRequest)
+		friends.POST("/accept/:id/:sender_id/:receiver_id", friendsHandler.AcceptFriendRequest)
+		friends.DELETE("/decline/:id/:sender_id/:receiver_id", friendsHandler.DeclineFriendRequest)
+		friends.DELETE("/friend-request/:user_id/:request_id", friendsHandler.DeleteFriendRequest)
 
 		// User Notifications
 		friends.GET("/friend-requests/:receiver_id", friendsHandler.GetFriendRequests)
