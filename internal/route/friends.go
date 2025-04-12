@@ -24,5 +24,7 @@ func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
 		friends.POST("/accept/:id/:sender_id/:receiver_id", friendsHandler.AcceptFriendRequest)
 		friends.DELETE("/decline/:id/:sender_id/:receiver_id", friendsHandler.DeclineFriendRequest)
 		friends.DELETE("/friend-request/:user_id/:request_id", friendsHandler.DeleteFriendRequest)
+		// User Notifications
+		friends.GET("/friend-requests/:receiver_id", friendsHandler.GetFriendRequests)
 	}
 }
