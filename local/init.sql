@@ -7,6 +7,11 @@ CREATE TABLE users (
     last_name VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
     role VARCHAR(50),
+    -- TAKEN FROM https://developer.spotify.com/documentation/web-api/reference/get-current-users-profile
+    spotify_id VARCHAR(255) UNIQUE, -- USE TO ASSOCIATE SPOTIFY ID WITH OUR USER ID
+    spotify_display_name VARCHAR(255),
+    spotify_profile_uri VARCHAR(255),
+    spotify_profile_picture_uri VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -19,12 +24,14 @@ CREATE TABLE songs (
     album VARCHAR(255),
     release_date DATE,
     genre VARCHAR(100),
+    cover_uri VARCHAR(255),
+    preview_uri VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Friend Requests Table
 CREATE TABLE friend_requests (
-    id SERIAL PRIMARY KEY,
+    request_id SERIAL PRIMARY KEY,
     sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     request_date TIMESTAMP DEFAULT NOW(),
@@ -46,11 +53,10 @@ ON friends (LEAST(user_id, friend_id), GREATEST(user_id, friend_id));
 
 -- Rankings Table (Tracks Ratings for Songs by Users)
 CREATE TABLE rankings (
-    id SERIAL PRIMARY KEY,
+    ranking_id SERIAL PRIMARY KEY,
     song_id INTEGER NOT NULL REFERENCES songs(song_id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    rank INTEGER CHECK (rank >= 1 AND rank <= 10),
-    points INTEGER NOT NULL,
+    rank INTEGER CHECK (rank >= 1 AND rank <= 5),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
