@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/ranktify/ranktify-be/config"
 	"github.com/ranktify/ranktify-be/internal/route"
 )
@@ -32,6 +33,8 @@ func main() {
 		route.UserRoutes(mainGroup, db)
 		route.ApiRoutes(mainGroup, db)
 	}
+
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	router.Run("localhost:8080")
 }
