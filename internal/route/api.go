@@ -15,10 +15,13 @@ func ApiRoutes(router *gin.RouterGroup, db *sql.DB) {
 
 	api := router.Group("/api")
 	{
+		// JWT
 		api.POST("/refresh", tokensHandler.Refresh)
 
-		//protected routes
+		// protected routes
+		// Spotify
 		api.Use(middleware.AuthMiddleware())
 		api.POST("/callback", spotifyHandler.AuthCallback)
+		api.POST("/spotify-refresh", spotifyHandler.RefreshAccessToken)
 	}
 }

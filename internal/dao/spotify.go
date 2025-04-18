@@ -23,7 +23,7 @@ func (dao *SpotifyDAO) SaveRefreshToken(rt model.SpotifyRefreshToken) error {
 	return err
 }
 
-func (dao *SpotifyDAO) GetRefreshToken(userID string) (string, error) {
+func (dao *SpotifyDAO) GetRefreshToken(userID uint64) (string, error) {
 	var token string
 	query := `
 		SELECT refresh_token 
@@ -37,4 +37,33 @@ func (dao *SpotifyDAO) GetRefreshToken(userID string) (string, error) {
 		return "", err
 	}
 	return token, nil
+}
+
+func (dao *SpotifyDAO) UpdateRefreshToken(userID uint64, newRefreshToken string) error {
+	query := `
+		UPDATE spotify_refresh_tokens
+		SET refresh_token = $1
+		WHERE user_id = $2
+	`
+
+	err := dao.DB.QueryRow(query, newRefreshToken, userID).Scan()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dao *SpotifyDAO) DeleteRefreshToken(userID uint64) error {
+	query := `
+		DELETE FROM spotify_refresh_tokens
+		WHERE user_id = $1
+	`
+
+	err := dao.DB.QueryRow(query, userID).Scan()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
