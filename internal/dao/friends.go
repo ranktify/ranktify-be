@@ -56,7 +56,7 @@ func (dao *FriendsDAO) GetFriends(id uint64) ([]model.User, error) {
 
 func (dao *FriendsDAO) GetFriendRequests(receiverID uint64) ([]model.FriendRequests, int, error) {
 	query := `
-		SELECT id, sender_id, receiver_id, request_date, status
+		SELECT request_id, sender_id, receiver_id, request_date, status
 		FROM friend_requests
 		WHERE receiver_id = $1
 `
@@ -70,7 +70,7 @@ func (dao *FriendsDAO) GetFriendRequests(receiverID uint64) ([]model.FriendReque
 	for rows.Next() {
 		var friendRequest model.FriendRequests
 		if err := rows.Scan(
-			&friendRequest.ID,
+			&friendRequest.RequestID,
 			&friendRequest.SenderID,
 			&friendRequest.ReceiverID,
 			&friendRequest.RequestDate,
@@ -130,7 +130,7 @@ func (dao *FriendsDAO) AcceptFriendRequest(userID uint64, receiverID uint64) err
 func (dao *FriendsDAO) DeleteFriendRequest(requestID uint64) error {
 	query := `
 		DELETE FROM friend_requests 
-		WHERE id = $1;
+		WHERE request_id = $1;
 	`
 	result, err := dao.DB.Exec(query, requestID)
 	if err != nil {
