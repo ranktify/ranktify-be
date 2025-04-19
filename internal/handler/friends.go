@@ -95,7 +95,7 @@ func (h *FriendHandler) SendFriendRequest(c *gin.Context) {
 }
 
 func (h *FriendHandler) AcceptFriendRequest(c *gin.Context) {
-	requestID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	requestID, err := strconv.ParseUint(c.Param("request_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
 		return
@@ -125,7 +125,7 @@ func (h *FriendHandler) AcceptFriendRequest(c *gin.Context) {
 }
 
 func (h *FriendHandler) DeclineFriendRequest(c *gin.Context) {
-	requestID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	requestID, err := strconv.ParseUint(c.Param("request_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
 		return
