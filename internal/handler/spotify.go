@@ -19,16 +19,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func getSpotifyClientID() string {
-	return os.Getenv("SPOTIFY_CLIENT_ID")
-}
+var tokenEndpoint string = "https://accounts.spotify.com/api/token"
 
-func getSpotifySecret() string {
-	return os.Getenv("SPOTIFY_SECRET")
-}
-
-func getSpotifyRedirectURI() string {
-	return os.Getenv("SPOTIFY_REDIRECT_URI")
+var httpClient = &http.Client{
+	Timeout: 10 * time.Second,
 }
 
 type SpotifyHandler struct {
@@ -37,12 +31,6 @@ type SpotifyHandler struct {
 
 func NewSpotifyHandler(dao *dao.SpotifyDAO) *SpotifyHandler {
 	return &SpotifyHandler{DAO: dao}
-}
-
-var BaseUrl string = "https://accounts.spotify.com"
-
-var httpClient = &http.Client{
-	Timeout: 10 * time.Second,
 }
 
 type SpotifyAuthCallbackResponse struct {
@@ -64,9 +52,20 @@ type SpotifyRefreshTokenRequest struct {
 	UserID uint64 `json:"user_id"`
 }
 
+func getSpotifyClientID() string {
+	return os.Getenv("SPOTIFY_CLIENT_ID")
+}
+
+func getSpotifySecret() string {
+	return os.Getenv("SPOTIFY_SECRET")
+}
+
+func getSpotifyRedirectURI() string {
+	return os.Getenv("SPOTIFY_REDIRECT_URI")
+}
+
 func fetchSpotifyToken(ctx context.Context, formData url.Values) (*SpotifyAccessTokenResponse, error) {
-	endpoint := BaseUrl + "/api/token"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(formData.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenEndpoint, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, err
 	}
