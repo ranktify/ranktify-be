@@ -14,12 +14,25 @@ go mod tidy
 1.  **Run the Application**:
      Before running the application, make sure to create .env file with the folliwing format:
 ```python
-DB_HOST=localhost
-DB_PORT=9090
-DB_USER=ranktifyUser
-DB_PASSWORD=concalma
-DB_NAME=ranktify
-DB_SSLMODE=disable # For local development: disabled, production: required
+# Local database
+DB_HOST="localhost"
+DB_PORT="9090"
+DB_USER="ranktifyUser"
+DB_PASSWORD="concalma"
+DB_NAME="ranktify"
+DB_SSLMODE="disable"
+
+# JWT generated using the jwt.generateJWTKeys()
+JWT_ACCESS_KEY=""
+JWT_REFRESH_KEY=""
+JWT_ISSUER=""
+
+#spotify, taken from the spotify developer dashboard
+SPOTIFY_CLIENT_ID=""
+SPOTIFY_SECRET=""
+SPOTIFY_REDIRECT_URI=""
+
+
 ```
 And finall run the app:
 
