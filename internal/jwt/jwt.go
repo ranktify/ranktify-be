@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -11,11 +12,20 @@ import (
 )
 
 func getAccessKey() []byte {
-	return []byte(os.Getenv("JWT_ACCESS_KEY"))
+	accesskey := os.Getenv("JWT_ACCESS_KEY")
+	if accesskey == "" {
+		log.Fatalf("No access key found")
+	}
+	return []byte(accesskey)
 }
 
 func getRefreshKey() []byte {
-	return []byte(os.Getenv("JWT_REFRESH_KEY"))
+	refreshKey := os.Getenv("JWT_REFRESH_KEY")
+	if refreshKey == "" {
+		log.Fatalf("No refresh key found")
+	}
+
+	return []byte(refreshKey)
 }
 
 func getIssuerString() string {
