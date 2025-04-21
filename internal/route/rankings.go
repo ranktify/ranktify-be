@@ -10,12 +10,14 @@ import (
 )
 
 func RankingsRoutes(group *gin.RouterGroup, db *sql.DB) {
+	friendsDAO := dao.NewFriendsDAO(db)
 	rankingsDAO := dao.NewRankingsDAO(db)
-	rankingsHandler := handler.NewRankingsHandler(rankingsDAO)
-	
+	rankingsHandler := handler.NewRankingsHandler(rankingsDAO, friendsDAO)
+
 	rankings := group.Group("/rankings")
 	{
 		rankings.Use(middleware.AuthMiddleware())
 		rankings.GET("/:user_id", rankingsHandler.GetRankedSongs)
+		rankings.GET("/friends-ranked-songs/:user_id", rankingsHandler.GetFriendsRankedSongs)
 	}
 }

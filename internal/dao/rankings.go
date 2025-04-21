@@ -16,7 +16,7 @@ func NewRankingsDAO(db *sql.DB) *RankingsDao {
 
 func (dao *RankingsDao) GetRankedSongs(userID uint64) ([]model.Rankings, error) {
 	query := `
-		SELECT ranking_id, song_id, rank
+		SELECT ranking_id, song_id, user_id, rank
 		FROM rankings
 		WHERE user_id = $1
 	`
@@ -32,8 +32,9 @@ func (dao *RankingsDao) GetRankedSongs(userID uint64) ([]model.Rankings, error) 
 		if err := rows.Scan(
 			&ranking.RankingID,
 			&ranking.SongID,
+			&ranking.UserID,
 			&ranking.Rank,
-		); err != nil{
+		); err != nil {
 			return nil, err
 		}
 		rankings = append(rankings, ranking)
