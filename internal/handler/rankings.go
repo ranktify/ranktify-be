@@ -5,20 +5,15 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ranktify/ranktify-be/internal/dao"
-	"github.com/ranktify/ranktify-be/internal/model"
+	"github.com/ranktify/ranktify-be/internal/service"
 )
 
 type RankingsHandler struct {
-	RankingDAO *dao.RankingsDao
-	FriendsDAO *dao.FriendsDAO
+	Service *service.RankingsService
 }
 
-func NewRankingsHandler(rankingsDao *dao.RankingsDao, friendsDao *dao.FriendsDAO) *RankingsHandler {
-	return &RankingsHandler{
-		RankingDAO: rankingsDao,
-		FriendsDAO: friendsDao,
-	}
+func NewRankingsHandler(service *service.RankingsService) *RankingsHandler {
+	return &RankingsHandler{Service: service}
 }
 
 func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
@@ -27,11 +22,8 @@ func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	rankings, err := h.RankingDAO.GetRankedSongs(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve rankings"})
-	}
-	c.JSON(http.StatusOK, gin.H{"rankings": rankings})
+	statusCode, content := h.Service.GetRankedSongs(userID)
+	c.JSON(statusCode, content)
 }
 
 func (h *RankingsHandler) GetFriendsRankedSongs(c *gin.Context) {
@@ -40,23 +32,6 @@ func (h *RankingsHandler) GetFriendsRankedSongs(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	friends, err := h.FriendsDAO.GetFriends(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friends"})
-		return
-	}
-	var friendIDs []uint64
-	for _, friend := range friends {
-		friendIDs = append(friendIDs, uint64(friend.Id))
-	}
-	var rankedSongs []model.Rankings
-	for _, friend := range friendIDs {
-		rankedSong, err := h.RankingDAO.GetRankedSongs(uint64(friend))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve ranked songs"})
-			return
-		}
-		rankedSongs = append(rankedSongs, rankedSong...)
-	}
-	c.JSON(http.StatusOK, gin.H{"User's friends rankings": rankedSongs})
+	statusCode, content := h.Service.GetFriendsRankedSongs(userID)
+	c.JSON(statusCode, content)
 }

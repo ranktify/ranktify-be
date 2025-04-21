@@ -7,12 +7,15 @@ import (
 	"github.com/ranktify/ranktify-be/internal/dao"
 	"github.com/ranktify/ranktify-be/internal/handler"
 	"github.com/ranktify/ranktify-be/internal/middleware"
+	"github.com/ranktify/ranktify-be/internal/service"
 )
 
 func RankingsRoutes(group *gin.RouterGroup, db *sql.DB) {
-	friendsDAO := dao.NewFriendsDAO(db)
-	rankingsDAO := dao.NewRankingsDAO(db)
-	rankingsHandler := handler.NewRankingsHandler(rankingsDAO, friendsDAO)
+	rankingsService := service.NewRankingsService(
+		dao.NewRankingsDAO(db),
+		dao.NewFriendsDAO(db),
+	)
+	rankingsHandler := handler.NewRankingsHandler(rankingsService)
 
 	rankings := group.Group("/rankings")
 	{
