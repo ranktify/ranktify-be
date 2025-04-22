@@ -14,28 +14,33 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
 			fmt.Println("Token missing in headers")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized, missing auth token in header"})
 			return
 		}
 		trimTokenString := strings.TrimPrefix(tokenString, "Bearer ")
-		if trimTokenString == tokenString {
+		if trimTokenString == "" {
 			fmt.Println("Token not found in headers")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
 
 		token, err := jwt.ValidateAccessToken(trimTokenString)
 		if err != nil {
 			fmt.Println("Token verification failed")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
-		// TODO: We can extract the claims from the acess token and add it to the *gin.Context
-		// claims, err := jwt.ParseAccessTokenClaims()
-		fmt.Printf("Token verified: %+v\\n", token.Claims)
+
+		if claims, err := jwt.GetClaimsFromAccessToken(token); err != nil {
+			fmt.Println("Error getting claims from token")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
+		} else {
+			c.Set("userId", claims.UserID)
+			c.Set("username", claims.Username)
+			c.Set("email", claims.Email)
+		}
+
 		c.Next()
 	}
 }
