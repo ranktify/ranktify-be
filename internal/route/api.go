@@ -21,6 +21,7 @@ func ApiRoutes(router *gin.RouterGroup, db *sql.DB) {
 		// protected routes
 		// Spotify
 		api.Use(middleware.AuthMiddleware())
+		api.Use(middleware.SpotifyTokenMiddleware())
 		api.GET("/rank", spotifyHandler.GetSongsToRank)
 		api.POST("/callback", spotifyHandler.AuthCallback)
 		api.POST("/spotify-refresh", spotifyHandler.RefreshAccessToken)
