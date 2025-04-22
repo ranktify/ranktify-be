@@ -11,6 +11,12 @@ import (
 	"github.com/ranktify/ranktify-be/internal/model"
 )
 
+type AccessTokenClaims struct {
+	UserID   uint64
+	Username string
+	Email    string
+}
+
 func getAccessKey() []byte {
 	accesskey := os.Getenv("JWT_ACCESS_KEY")
 	if accesskey == "" {
@@ -34,7 +40,9 @@ func getIssuerString() string {
 
 type customClaims struct {
 	jwt.RegisteredClaims
-	UserID float64 `json:"user_id"`
+	UserID   float64 `json:"user_id"`
+	Username string  `json:"username,omitempty"` // missing in the rt but not in the at
+	Email    string  `json:"email,omitempty"`
 }
 
 // validate a token using the provided secret key, assumes that the signing method was HS256.
@@ -166,4 +174,17 @@ func ParseRefreshTokenClaims(tokenString string) (*model.JWTRefreshToken, error)
 	}
 
 	return rt, nil
+}
+
+func GetClaimsFromAccessToken(token *jwt.Token) (*AccessTokenClaims, error) {
+	claims, ok := token.Claims.(*customClaims)
+	if !ok {
+		return nil, fmt.Errorf("error extracting claims from token 1")
+	}
+
+	return &AccessTokenClaims{
+		UserID:   uint64(claims.UserID),
+		Username: claims.Username,
+		Email:    claims.Email,
+	}, nil
 }
