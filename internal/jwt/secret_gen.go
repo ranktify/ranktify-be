@@ -11,19 +11,18 @@ import (
 // the other one for JWT_REFRESH_KEY in the .env.
 // Used in the main function for a single print and then not called again.
 func GenerateJWTKeys() {
-	accessKey := make([]byte, 32)
-	_, err := rand.Read(accessKey)
-	if err != nil {
-		panic(err)
+	generateKey := func() string {
+		key := make([]byte, 32)
+		if _, err := rand.Read(key); err != nil {
+			panic(err)
+		}
+		return base64.StdEncoding.EncodeToString(key)
 	}
-	fmt.Printf("JWT_ACCESS_KEY=\"%s\"\n", base64.StdEncoding.EncodeToString(accessKey))
 
-	refreshKey := make([]byte, 32)
-	_, err = rand.Read(refreshKey)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("JWT_REFRESH_KEY=\"%s\"\n", base64.StdEncoding.EncodeToString(refreshKey))
+	accessKey := generateKey()
+	refreshKey := generateKey()
+	fmt.Printf("JWT_ACCESS_KEY=\"%s\"\n", accessKey)
+	fmt.Printf("JWT_REFRESH_KEY=\"%s\"\n", refreshKey)
 
 	fmt.Println("Please add these two lines to the .env file")
 }

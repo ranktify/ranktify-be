@@ -1,15 +1,25 @@
 package main
 
 import (
+	"flag"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/config"
+	"github.com/ranktify/ranktify-be/internal/jwt"
 	"github.com/ranktify/ranktify-be/internal/route"
 )
 
 func main() {
+	genTokensAndExit := flag.Bool("jwt", false, "Generate JWT tokens and terminates program")
+	flag.Parse()
+
+	if *genTokensAndExit {
+		jwt.GenerateJWTKeys()
+		return
+	}
+
 	router := gin.Default()
 
 	// below is the cors setup for browser testing
