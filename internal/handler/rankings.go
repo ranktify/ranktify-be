@@ -5,15 +5,15 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ranktify/ranktify-be/internal/dao"
+	"github.com/ranktify/ranktify-be/internal/service"
 )
 
 type RankingsHandler struct {
-	DAO *dao.RankingsDao
+	Service *service.RankingsService
 }
 
-func NewRankingsHandler(dao *dao.RankingsDao) *RankingsHandler {
-	return &RankingsHandler{DAO: dao}
+func NewRankingsHandler(service *service.RankingsService) *RankingsHandler {
+	return &RankingsHandler{Service: service}
 }
 
 func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
@@ -22,9 +22,16 @@ func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	rankings, err := h.DAO.GetRankedSongs(userID)
+	statusCode, content := h.Service.GetRankedSongs(userID)
+	c.JSON(statusCode, content)
+}
+
+func (h *RankingsHandler) GetFriendsRankedSongs(c *gin.Context) {
+	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve rankings"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"rankings": rankings})
+	statusCode, content := h.Service.GetFriendsRankedSongs(userID)
+	c.JSON(statusCode, content)
 }
