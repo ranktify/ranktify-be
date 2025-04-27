@@ -27,6 +27,9 @@ func ApiRoutes(router *gin.RouterGroup, db *sql.DB) {
 		// spotify routes that need a access token
 		api.Use(middleware.SpotifyTokenMiddleware())
 		api.GET("/rank", spotifyHandler.GetSongsToRank)
+		api.GET("/random-songs/:limit", spotifyHandler.GetRandomSongsToRank)
+		api.GET("/random-songs-by-genre/:limit/:genre", spotifyHandler.GetRandomSongsByGenreToRank)
+		api.GET("/random-genre/:limit", spotifyHandler.GetRandomSongsByRandomGenreToRank)
 
 	}
 }

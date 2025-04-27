@@ -79,3 +79,18 @@ func (dao *RankingsDao) GetFriendsRankedSongs(userID uint64) ([]model.Rankings, 
 	}
 	return rankings, nil
 }
+
+func (dao *RankingsDao) CheckIfSongIsRanked(userID uint64, songID uint64) (bool, error) {
+	var exists bool
+	err := dao.DB.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM rankings WHERE user_id = $1 AND song_id = $2
+		)
+	`, userID, songID).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}

@@ -6,9 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -148,18 +151,177 @@ func getTopNSongs(ctx context.Context, client *spotify.Client, n int) ([]model.S
 			coverURIPtr = &uri
 		}
 
+		var genrePtr *string
+		if len(track.Artists) > 0 {
+			artist, err := client.GetArtist(ctx, track.Artists[0].ID)
+			if err == nil && len(artist.Genres) > 0 {
+				genre := artist.Genres[0] // Just pick the first genre
+				genrePtr = &genre
+			}
+		}
+
 		songs = append(songs, model.Song{
 			SpotifyID:   track.ID.String(),
 			Title:       track.Name,
 			Artist:      artistNamePtr,
 			Album:       albumNamePtr,
 			ReleaseDate: releaseDatePtr,
-			Genre:       nil, // genre not provided by track
+			Genre:       genrePtr,
 			CoverURI:    coverURIPtr,
-			// PreviewURI, SongID, CreatedAt are ignored here
 		})
 	}
 
+	return songs, nil
+}
+func StoreSongs(body []byte) ([]model.Song, error) {
+	var searchResp struct {
+		Tracks struct {
+			Items []struct {
+				ID      string `json:"id"`
+				Name    string `json:"name"`
+				Artists []struct {
+					Name string `json:"name"`
+				} `json:"artists"`
+				Album struct {
+					Name   string `json:"name"`
+					Images []struct {
+						URL string `json:"url"`
+					} `json:"images"`
+					ReleaseDate string `json:"release_date"`
+				} `json:"album"`
+				PreviewURL string `json:"preview_url"`
+			} `json:"items"`
+		} `json:"tracks"`
+	}
+
+	err := json.Unmarshal(body, &searchResp)
+	if err != nil {
+		return nil, err
+	}
+
+	var songs []model.Song
+	for _, item := range searchResp.Tracks.Items {
+		var releaseDate *time.Time
+		if item.Album.ReleaseDate != "" {
+			t, err := time.Parse("2006-01-02", item.Album.ReleaseDate)
+			if err == nil {
+				releaseDate = &t
+			}
+		}
+
+		var artistName *string
+		if len(item.Artists) > 0 {
+			artistName = &item.Artists[0].Name
+		}
+
+		var coverURI *string
+		if len(item.Album.Images) > 0 {
+			coverURI = &item.Album.Images[0].URL
+		}
+
+		song := model.Song{
+			SpotifyID:   item.ID,
+			Title:       item.Name,
+			Artist:      artistName,
+			Album:       &item.Album.Name,
+			ReleaseDate: releaseDate,
+			CoverURI:    coverURI,
+			PreviewURI:  &item.PreviewURL,
+			CreatedAt:   time.Now(),
+		}
+
+		songs = append(songs, song)
+	}
+	return songs, nil
+}
+
+func GetRandomSongs(ctx context.Context, accessToken string, limit int) ([]model.Song, error) {
+	wildcards := []string{
+		"%25a%25", "a%25",
+		"%25e%25", "e%25",
+		"%25i%25", "i%25",
+		"%25o%25", "o%25",
+		"%25u%25", "u%25",
+	}
+
+	query := wildcards[rand.Intn(len(wildcards))]
+	offset := rand.Intn(limit) + 1
+	market := "US"
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&offset=%d&limit=%d&type=track&market=%s", query, offset, limit, market) // limit more if you want
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch songs, status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	songs, err := StoreSongs(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store songs")
+	}
+
+	return songs, nil
+}
+
+func GetRandomSongsByGenre(ctx context.Context, accessToken string, limit int, genre string) ([]model.Song, error) {
+	wildcards := []string{
+		"%25a%25", "a%25",
+		"%25e%25", "e%25",
+		"%25i%25", "i%25",
+		"%25o%25", "o%25",
+		"%25u%25", "u%25",
+	}
+
+	query := wildcards[rand.Intn(len(wildcards))]
+	offset := rand.Intn(limit) + 1
+	market := "US"
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s%%20genre:%%22%s%%22&offset=%d&limit=%d&type=track&market=%s", query, genre, offset, limit, market)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch songs, status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	songs, err := StoreSongs(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store songs")
+	}
 	return songs, nil
 }
 
@@ -261,4 +423,96 @@ func (h *SpotifyHandler) GetSongsToRank(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, songs)
+}
+
+func (h *SpotifyHandler) GetRandomSongsToRank(c *gin.Context) {
+	rawToken := c.GetHeader("Spotify-Token")
+	if rawToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+		return
+	}
+	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+
+	limitStr := c.Param("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+
+	songs, err := GetRandomSongs(c.Request.Context(), accessToken, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, songs)
+}
+
+func (h *SpotifyHandler) GetRandomSongsByGenreToRank(c *gin.Context) {
+	rawToken := c.GetHeader("Spotify-Token")
+	if rawToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+		return
+	}
+	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+
+	limitStr := c.Param("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+	genre := c.Param("genre")
+	if genre == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
+		return
+	}
+	songs, err := GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, genre)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, songs)
+}
+
+func (h *SpotifyHandler) GetRandomSongsByRandomGenreToRank(c *gin.Context) {
+	rawToken := c.GetHeader("Spotify-Token")
+	if rawToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+		return
+	}
+	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+
+	limitStr := c.Param("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+
+	client := SpotifyClientFromAccessToken(c.Request.Context(), accessToken)
+
+	songSearch, err := getTopNSongs(c.Request.Context(), client, 50)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	index := rand.Intn(len(songSearch))
+
+	genre := songSearch[index].Genre
+	if genre == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No genre found in selected song"})
+		return
+	}
+	songs, err := GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, *genre)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"genre": genre,
+		"songs": songs,
+	})
+
 }
