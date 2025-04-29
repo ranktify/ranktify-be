@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -101,9 +102,9 @@ func (h *SpotifyHandler) RefreshAccessToken(c *gin.Context) {
 
 }
 
-// Get N songs to rank for now N is constant at 50 this can be changed, even paginated w/ offset
+// Get N tracks to rank
 func (h *SpotifyHandler) GetSongsToRank(c *gin.Context) {
-	rawToken := c.GetHeader("Spotify-Token")
+	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
 	if rawToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
 		return
@@ -119,4 +120,84 @@ func (h *SpotifyHandler) GetSongsToRank(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, songs)
+}
+
+func (h *SpotifyHandler) GetRandomSongsToRank(c *gin.Context) {
+	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
+	if rawToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+		return
+	}
+	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+
+	limitStr := c.Param("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+
+	songs, err := spotify.GetRandomSongs(c.Request.Context(), accessToken, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, songs)
+}
+
+func (h *SpotifyHandler) GetRandomSongsByGenreToRank(c *gin.Context) {
+	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
+	if rawToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+		return
+	}
+	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+
+	limitStr := c.Param("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+	genre := c.Param("genre")
+	if genre == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
+		return
+	}
+	songs, err := spotify.GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, genre)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, songs)
+}
+
+func (h *SpotifyHandler) GetRandomSongsByRandomGenreToRank(c *gin.Context) {
+	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
+	if rawToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+		return
+	}
+	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+
+	limitStr := c.Param("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
+		return
+	}
+
+	randomGenre := spotify.GetRandomGenre()
+
+	songs, err := spotify.GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, randomGenre)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"genre": randomGenre,
+		"songs": songs,
+	})
+
 }

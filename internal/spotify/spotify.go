@@ -2,9 +2,11 @@ package spotify
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
@@ -14,6 +16,34 @@ import (
 	"github.com/zmb3/spotify/v2"
 )
 
+var genres = []string{
+	// US market
+	"pop",
+	"hip%20hop",
+	"rock",
+	"country",
+	"edm",
+	"latin",
+	"r%20b",
+	"reggae",
+	"jazz",
+	"classical",
+	// Latin Market
+	"reggaeton",
+	"salsa",
+	"bachata",
+	"merengue",
+	"cumbia",
+	"ranchera",
+	"mariachi",
+	"vallenato",
+	"tango",
+	"bolero",
+	"latin%20pop",
+	"latin%20rock",
+	"latin%20trap",
+}
+
 var (
 	scdnMP3PreviewRegex = regexp.MustCompile(`https://p\.scdn\.co/mp3-preview/[^"' >)]+`)
 
@@ -22,12 +52,18 @@ var (
 	}
 )
 
+func GetRandomGenre() string {
+	index := rand.Intn(len(genres))
+
+	return genres[index]
+}
+
 // returns top N songs from the user using the CurrentUsersTopTracks from zmb3 client
 // the PreviewURI, SongID, CreatedAt are ignored here
 func GetTopNSongs(ctx context.Context, client *spotify.Client, n int) ([]model.Song, error) {
 	// We have tree options for terms: long_term, medium_term, and short_term
 	// add spotify.Timerange(spotify.MediumTermRange) as parameter to "CurrentUsersTopTracks"
-	results, err := client.CurrentUsersTopTracks(ctx, spotify.Limit(n))
+	results, err := client.CurrentUsersTopTracks(ctx, spotify.Limit(n), spotify.Timerange(spotify.LongTermRange))
 	if err != nil {
 		return nil, err
 	}
@@ -167,4 +203,139 @@ func ScrapePreviewURI(ctx context.Context, client *spotify.Client, trackTitle st
 	}
 
 	return audioURI
+}
+
+func StoreSongs(body []byte) ([]model.Song, error) {
+	var searchResp SpotifySearchResponse
+
+	err := json.Unmarshal(body, &searchResp)
+	if err != nil {
+		return nil, err
+	}
+
+	var songs []model.Song
+
+	for _, item := range searchResp.Tracks.Items {
+		var releaseDate *time.Time
+		if item.Album.ReleaseDate != "" {
+			t, err := time.Parse("2006-01-02", item.Album.ReleaseDate)
+			if err == nil {
+				releaseDate = &t
+			}
+		}
+
+		var artistName *string
+		if len(item.Artists) > 0 {
+			artistName = &item.Artists[0].Name
+		}
+
+		var coverURI *string
+		if len(item.Album.Images) > 0 {
+			coverURI = &item.Album.Images[0].URL
+		}
+
+		song := model.Song{
+			SpotifyID:   item.ID,
+			Title:       item.Name,
+			Artist:      artistName,
+			Album:       &item.Album.Name,
+			ReleaseDate: releaseDate,
+			CoverURI:    coverURI,
+			PreviewURI:  item.PreviewURL,
+			CreatedAt:   time.Now(),
+		}
+
+		songs = append(songs, song)
+	}
+	return songs, nil
+}
+
+func GetRandomSongs(ctx context.Context, accessToken string, limit int) ([]model.Song, error) {
+	wildcards := []string{
+		"%25a%25", "a%25",
+		"%25e%25", "e%25",
+		"%25i%25", "i%25",
+		"%25o%25", "o%25",
+		"%25u%25", "u%25",
+	}
+
+	query := wildcards[rand.Intn(len(wildcards))]
+	offset := rand.Intn(limit) + 1
+	market := "US"
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&offset=%d&limit=%d&type=track&market=%s", query, offset, limit, market)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch songs, status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	songs, err := StoreSongs(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store songs")
+	}
+
+	return songs, nil
+}
+
+func GetRandomSongsByGenre(ctx context.Context, accessToken string, limit int, genre string) ([]model.Song, error) {
+	wildcards := []string{
+		"%25a%25", "a%25",
+		"%25e%25", "e%25",
+		"%25i%25", "i%25",
+		"%25o%25", "o%25",
+		"%25u%25", "u%25",
+	}
+
+	query := wildcards[rand.Intn(len(wildcards))]
+	offset := rand.Intn(limit) + 1
+	market := "US"
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s%%20genre:%%22%s%%22&offset=%d&limit=%d&type=track&market=%s", query, genre, offset, limit, market)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch songs, status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	songs, err := StoreSongs(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store songs")
+	}
+	return songs, nil
 }

@@ -45,7 +45,9 @@ type SpotifyArtist struct {
 }
 
 type SpotifyAlbum struct {
-	Images []SpotifyImage `json:"images"`
+	Name        string         `json:"name"`
+	ReleaseDate string         `json:"release_date"`
+	Images      []SpotifyImage `json:"images"`
 }
 
 type SpotifyImage struct {
