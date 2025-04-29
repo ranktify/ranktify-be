@@ -22,6 +22,34 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var genres = []string{
+	// US market
+	"pop",
+	"hip%20hop",
+	"rock",
+	"country",
+	"edm",
+	"latin",
+	"r%20b",
+	"reggae",
+	"jazz",
+	"classical",
+	// Latin Market
+	"reggaeton",
+	"salsa",
+	"bachata",
+	"merengue",
+	"cumbia",
+	"ranchera",
+	"mariachi",
+	"vallenato",
+	"tango",
+	"bolero",
+	"latin%20pop",
+	"latin%20rock",
+	"latin%20trap",
+}
+
 var tokenEndpoint string = "https://accounts.spotify.com/api/token"
 
 var httpClient = &http.Client{
@@ -111,7 +139,7 @@ func SpotifyClientFromAccessToken(ctx context.Context, accessToken string) *spot
 func getTopNSongs(ctx context.Context, client *spotify.Client, n int) ([]model.Song, error) {
 	// We have tree options for terms: long_term, medium_term, and short_term
 	// add spotify.Timerange(spotify.MediumTermRange) as parameter to "CurrentUsersTopTracks"
-	results, err := client.CurrentUsersTopTracks(ctx, spotify.Limit(n))
+	results, err := client.CurrentUsersTopTracks(ctx, spotify.Limit(n), spotify.Timerange(spotify.LongTermRange))
 	if err != nil {
 		return nil, err
 	}
@@ -173,26 +201,9 @@ func getTopNSongs(ctx context.Context, client *spotify.Client, n int) ([]model.S
 
 	return songs, nil
 }
+
 func StoreSongs(body []byte) ([]model.Song, error) {
-	var searchResp struct {
-		Tracks struct {
-			Items []struct {
-				ID      string `json:"id"`
-				Name    string `json:"name"`
-				Artists []struct {
-					Name string `json:"name"`
-				} `json:"artists"`
-				Album struct {
-					Name   string `json:"name"`
-					Images []struct {
-						URL string `json:"url"`
-					} `json:"images"`
-					ReleaseDate string `json:"release_date"`
-				} `json:"album"`
-				PreviewURL string `json:"preview_url"`
-			} `json:"items"`
-		} `json:"tracks"`
-	}
+	var searchResp SpotifySearchResponse
 
 	err := json.Unmarshal(body, &searchResp)
 	if err != nil {
@@ -200,6 +211,7 @@ func StoreSongs(body []byte) ([]model.Song, error) {
 	}
 
 	var songs []model.Song
+
 	for _, item := range searchResp.Tracks.Items {
 		var releaseDate *time.Time
 		if item.Album.ReleaseDate != "" {
@@ -226,7 +238,7 @@ func StoreSongs(body []byte) ([]model.Song, error) {
 			Album:       &item.Album.Name,
 			ReleaseDate: releaseDate,
 			CoverURI:    coverURI,
-			PreviewURI:  &item.PreviewURL,
+			PreviewURI:  item.PreviewURL,
 			CreatedAt:   time.Now(),
 		}
 
@@ -248,7 +260,7 @@ func GetRandomSongs(ctx context.Context, accessToken string, limit int) ([]model
 	offset := rand.Intn(limit) + 1
 	market := "US"
 
-	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&offset=%d&limit=%d&type=track&market=%s", query, offset, limit, market) // limit more if you want
+	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s&offset=%d&limit=%d&type=track&market=%s", query, offset, limit, market)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -490,28 +502,18 @@ func (h *SpotifyHandler) GetRandomSongsByRandomGenreToRank(c *gin.Context) {
 		return
 	}
 
-	client := SpotifyClientFromAccessToken(c.Request.Context(), accessToken)
+	index := rand.Intn(len(genres))
 
-	songSearch, err := getTopNSongs(c.Request.Context(), client, 50)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	index := rand.Intn(len(songSearch))
+	selectedGenre := genres[index]
 
-	genre := songSearch[index].Genre
-	if genre == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No genre found in selected song"})
-		return
-	}
-	songs, err := GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, *genre)
+	songs, err := GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, selectedGenre)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"genre": genre,
+		"genre": selectedGenre,
 		"songs": songs,
 	})
 
