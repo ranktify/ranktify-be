@@ -1,4 +1,27 @@
-package handler
+package spotify
+
+// --- Structs for Spotify API AUTH Response ---
+
+type SpotifyAuthCallbackResponse struct {
+	Code   string `json:"code"`    // An authorization code that can be exchanged for an access token.
+	State  string `json:"state"`   // The value of the state parameter supplied in the request.
+	Err    string `json:"error"`   // The reason authorization failed, for example: "access_denied"
+	UserID uint64 `json:"user_id"` // The ranktify user_id, to relate rt w/ user
+}
+
+type SpotifyAccessTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	Scope        string `json:"scope"`
+}
+
+type SpotifyRefreshTokenRequest struct {
+	UserID uint64 `json:"user_id"`
+}
+
+// --- Structs for Spotify API Response ---
 
 type SpotifySearchResponse struct {
 	Tracks SpotifyTracksObject `json:"tracks"`
@@ -14,7 +37,7 @@ type SpotifyTrack struct {
 	Artists      []SpotifyArtist     `json:"artists"`
 	Album        SpotifyAlbum        `json:"album"`
 	ExternalURLs SpotifyExternalURLs `json:"external_urls"`
-	PreviewURL   *string             `json:"preview_url"` // Use pointer for nullable fields
+	PreviewURL   *string             `json:"preview_url"` // Might be null
 }
 
 type SpotifyArtist struct {
@@ -22,9 +45,9 @@ type SpotifyArtist struct {
 }
 
 type SpotifyAlbum struct {
-	Name         string          `json:"name"`
-	ReleaseDate  string          `json:"release_date"`
-	Images       []SpotifyImage  `json:"images"`
+	Name        string         `json:"name"`
+	ReleaseDate string         `json:"release_date"`
+	Images      []SpotifyImage `json:"images"`
 }
 
 type SpotifyImage struct {
@@ -45,8 +68,7 @@ type SearchResult struct {
 	Artists    string `json:"artists"`
 	ImageURL   string `json:"imageUrl"`
 	SpotifyURL string `json:"spotifyUrl"`
-	PreviewURL string `json:"previewUrl"` // The original preview_url from API or ""
-	AudioURI   string `json:"audioUri"`   // The final URI (scraped or preview_url)
+	AudioURI   string `json:"audioUri"` // The final URI (scraped or preview_url)
 }
 
 type SearchResponse struct {
