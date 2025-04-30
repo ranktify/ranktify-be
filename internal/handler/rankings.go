@@ -28,3 +28,12 @@ func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"rankings": rankings})
 }
+
+func (h *RankingsHandler) GetTopWeeklyTracks(c *gin.Context) {
+	songs, err := h.DAO.GetTopWeeklyRankedSongs(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve top weekly tracks"})
+		return
+	}
+	c.JSON(http.StatusOK, songs)
+}

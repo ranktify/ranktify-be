@@ -12,10 +12,11 @@ import (
 func RankingsRoutes(group *gin.RouterGroup, db *sql.DB) {
 	rankingsDAO := dao.NewRankingsDAO(db)
 	rankingsHandler := handler.NewRankingsHandler(rankingsDAO)
-	
+
 	rankings := group.Group("/rankings")
 	{
 		rankings.Use(middleware.AuthMiddleware())
 		rankings.GET("/:user_id", rankingsHandler.GetRankedSongs)
+		rankings.GET("/top-weekly", rankingsHandler.GetTopWeeklyTracks)
 	}
 }
