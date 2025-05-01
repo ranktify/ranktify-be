@@ -19,8 +19,8 @@ func RankingsRoutes(group *gin.RouterGroup, db *sql.DB) {
 	rankings := group.Group("/rankings")
 	{
 		rankings.Use(middleware.AuthMiddleware())
-		rankings.GET("/:user_id", rankingsHandler.GetRankedSongs)
-		rankings.GET("/friends-ranked-songs/:user_id", rankingsHandler.GetFriendsRankedSongs)
-		rankings.GET("/friends-songs/:user_id", rankingsHandler.GetFriendsRankedSongsWithNoUserRank)
+		rankings.GET("/ranked-songs", rankingsHandler.GetRankedSongs)
+		rankings.GET("/friends-ranked-songs", rankingsHandler.GetFriendsRankedSongs)
+		rankings.GET("/friends-songs", rankingsHandler.GetFriendsRankedSongsWithNoUserRank)
 	}
 }

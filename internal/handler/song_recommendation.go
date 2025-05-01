@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
@@ -23,20 +22,20 @@ func NewSongRecommendationHandler(rankingsDAO *dao.RankingsDao) *SongRecommendat
 }
 
 func (h *SongRecommendationHandler) SongRecommendation(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
-	if err != nil {
+	rawUserID, ok := c.Get("userID")
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	rawToken := c.GetHeader("Spotify-Token")
-	if rawToken == "" {
+	userID := rawUserID.(uint64)
+	rawToken, ok := c.Get("spotifyToken")
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
 		return
 	}
-	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+	accessToken := rawToken.(string)
 
-	limitStr := c.Param("limit")
-	limit, err := strconv.Atoi(limitStr)
+	limit, err := strconv.Atoi(c.Param("limit"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
 		return

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
@@ -104,12 +103,12 @@ func (h *SpotifyHandler) RefreshAccessToken(c *gin.Context) {
 
 // Get N tracks to rank
 func (h *SpotifyHandler) GetSongsToRank(c *gin.Context) {
-	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
-	if rawToken == "" {
+	rawToken, ok := c.Get("spotifyToken")
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
 		return
 	}
-	accessToken := strings.TrimPrefix(rawToken, "Bearer ") // Maybe we can add this to the middleware
+	accessToken := rawToken.(string)
 
 	client := spotify.SpotifyClientFromAccessToken(c.Request.Context(), accessToken)
 
@@ -123,15 +122,14 @@ func (h *SpotifyHandler) GetSongsToRank(c *gin.Context) {
 }
 
 func (h *SpotifyHandler) GetRandomSongsToRank(c *gin.Context) {
-	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
-	if rawToken == "" {
+	rawToken, ok := c.Get("spotifyToken")
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
 		return
 	}
-	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+	accessToken := rawToken.(string)
 
-	limitStr := c.Param("limit")
-	limit, err := strconv.Atoi(limitStr)
+	limit, err := strconv.Atoi(c.Param("limit"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
 		return
@@ -146,15 +144,14 @@ func (h *SpotifyHandler) GetRandomSongsToRank(c *gin.Context) {
 }
 
 func (h *SpotifyHandler) GetRandomSongsByGenreToRank(c *gin.Context) {
-	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
-	if rawToken == "" {
+	rawToken, ok := c.Get("spotifyToken")
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
 		return
 	}
-	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+	accessToken := rawToken.(string)
 
-	limitStr := c.Param("limit")
-	limit, err := strconv.Atoi(limitStr)
+	limit, err := strconv.Atoi(c.Param("limit"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
 		return
@@ -173,15 +170,14 @@ func (h *SpotifyHandler) GetRandomSongsByGenreToRank(c *gin.Context) {
 }
 
 func (h *SpotifyHandler) GetRandomSongsByRandomGenreToRank(c *gin.Context) {
-	rawToken := c.GetHeader("Spotify-Token") // TODO: Change this so that it takes from the gin.Context using Get
-	if rawToken == "" {
+	rawToken, ok := c.Get("spotifyToken")
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
 		return
 	}
-	accessToken := strings.TrimPrefix(rawToken, "Bearer ")
+	accessToken := rawToken.(string)
 
-	limitStr := c.Param("limit")
-	limit, err := strconv.Atoi(limitStr)
+	limit, err := strconv.Atoi(c.Param("limit"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
 		return

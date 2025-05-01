@@ -17,7 +17,7 @@ type SpotifyAccessTokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
-type SpotifyRefreshTokenRequest struct {
+type SpotifyRefreshTokenRequest struct { // TODO" We can eliminate this struct since we are passing the userID in the JWT token
 	UserID uint64 `json:"user_id"`
 }
 
