@@ -31,3 +31,11 @@ func (s *RankingsService) GetFriendsRankedSongs(userID uint64) (int, content) {
 	}
 	return http.StatusOK, content{"User's friends rankings": rankings}
 }
+
+func (s *RankingsService) GetFriendsRankedSongsWithNoUserRank(userID uint64) (int, content) {
+	rankings, err := s.RankingsDAO.GetFriendsRankedSongsWithNoUserRank(userID)
+	if err != nil {
+		return http.StatusNotFound, content{"error": "Failed to retrieve rankings"}
+	}
+	return http.StatusOK, content{"User's friends songs": rankings}
+}

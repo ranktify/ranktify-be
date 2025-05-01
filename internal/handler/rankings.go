@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/service"
@@ -17,21 +16,35 @@ func NewRankingsHandler(service *service.RankingsService) *RankingsHandler {
 }
 
 func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
-	if err != nil {
+	rawUserID, ok := c.Get("userId")
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
+	userID := rawUserID.(uint64)
 	statusCode, content := h.Service.GetRankedSongs(userID)
 	c.JSON(statusCode, content)
 }
 
 func (h *RankingsHandler) GetFriendsRankedSongs(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
-	if err != nil {
+	rawUserID, ok := c.Get("userId")
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
+
+	userID := rawUserID.(uint64)
 	statusCode, content := h.Service.GetFriendsRankedSongs(userID)
+	c.JSON(statusCode, content)
+}
+
+func (h *RankingsHandler) GetFriendsRankedSongsWithNoUserRank(c *gin.Context) {
+	rawUserID, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	userID := rawUserID.(uint64)
+	statusCode, content := h.Service.GetFriendsRankedSongsWithNoUserRank(userID)
 	c.JSON(statusCode, content)
 }
