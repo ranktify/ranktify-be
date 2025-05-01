@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -50,9 +51,13 @@ func (h *RankingsHandler) GetFriendsRankedSongsWithNoUserRank(c *gin.Context) {
 }
 
 func (h *RankingsHandler) GetTopWeeklyTracks(c *gin.Context) {
-	songs, err := h.DAO.GetTopWeeklyRankedSongs(c.Request.Context())
+	songs, err := h.Service.GetTopWeeklyRankedSongs(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve top weekly tracks"})
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No tracks found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve top weekly tracks"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, songs)
