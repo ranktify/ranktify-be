@@ -15,7 +15,8 @@ func SongRecommendationRoutes(router *gin.RouterGroup, db *sql.DB) {
 
 	songRecommendation := router.Group("/song-recommendation")
 	{
+		songRecommendation.Use(middleware.AuthMiddleware())
 		songRecommendation.Use(middleware.SpotifyTokenMiddleware())
-		songRecommendation.GET("/:user_id/:limit", songRecommendationHandler.SongRecommendation)
+		songRecommendation.GET("/:limit", songRecommendationHandler.SongRecommendation)
 	}
 }

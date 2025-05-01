@@ -16,7 +16,7 @@ func NewRankingsHandler(service *service.RankingsService) *RankingsHandler {
 }
 
 func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
-	rawUserID, ok := c.Get("userID")
+	rawUserID, ok := c.Get("userId")
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
@@ -27,7 +27,7 @@ func (h *RankingsHandler) GetRankedSongs(c *gin.Context) {
 }
 
 func (h *RankingsHandler) GetFriendsRankedSongs(c *gin.Context) {
-	rawUserID, ok := c.Get("userID")
+	rawUserID, ok := c.Get("userId")
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
@@ -39,7 +39,7 @@ func (h *RankingsHandler) GetFriendsRankedSongs(c *gin.Context) {
 }
 
 func (h *RankingsHandler) GetFriendsRankedSongsWithNoUserRank(c *gin.Context) {
-	rawUserID, ok := c.Get("userID")
+	rawUserID, ok := c.Get("userId")
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return

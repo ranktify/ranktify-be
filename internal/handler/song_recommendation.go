@@ -22,7 +22,7 @@ func NewSongRecommendationHandler(rankingsDAO *dao.RankingsDao) *SongRecommendat
 }
 
 func (h *SongRecommendationHandler) SongRecommendation(c *gin.Context) {
-	rawUserID, ok := c.Get("userID")
+	rawUserID, ok := c.Get("userId")
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
