@@ -43,6 +43,7 @@ func main() {
 		route.FriendRoutes(mainGroup, db)
 		route.ApiRoutes(mainGroup, db)
 		route.RankingsRoutes(mainGroup, db)
+		route.SongRecommendationRoutes(mainGroup, db)
 	}
 
 	router.Run("localhost:8080")
