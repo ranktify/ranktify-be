@@ -39,3 +39,29 @@ func (s *RankingsService) GetFriendsRankedSongsWithNoUserRank(userID uint64) (in
 	}
 	return http.StatusOK, content{"User's friends songs": rankings}
 }
+
+
+func (s *RankingsService) RankSong(songID uint64, userID uint64, rank int) (int, content) {
+	err := s.RankingsDAO.RankSong(songID, userID, rank)
+	if err != nil {
+		return http.StatusBadRequest, content{"error": "Failed to rank song"}
+	}
+		return http.StatusOK, content{"Song ranked succesfully as a": rank}
+}
+
+func (s *RankingsService) DeleteRanking(rankingID uint64) (int, content) {
+	err := s.RankingsDAO.DeleteRanking(rankingID)
+		if err != nil {
+		return http.StatusBadRequest, content{"error": "Failed to delete rank"}
+	}
+		return http.StatusOK, content{"Ranking deleted succesfully": rankingID}
+}
+
+func (s *RankingsService) UpdateRanking(rankingID uint64, rank int) (int, content) {
+	err := s.RankingsDAO.UpdateRanking(rankingID, rank)
+	if err != nil {
+		return http.StatusBadRequest, content{"error": "Failed to update rank"}
+	}
+		return http.StatusOK, content{"Rank updated succesfully to": rank}
+	
+}
