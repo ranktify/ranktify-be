@@ -104,8 +104,9 @@ func (dao *RankingsDao) GetTopWeeklyRankedSongs(ctx context.Context) ([]model.So
 			s.spotify_id,
 			s.title,
 			s.artist,
-			s.album,  -- Select other song details you need
-			s.genre,  -- Select other song details you need
+			s.album,  
+			s.release_date,
+			s.genre,  
 			s.cover_uri,
 			s.preview_uri
 		FROM songs s
@@ -143,6 +144,7 @@ func (dao *RankingsDao) GetTopWeeklyRankedSongs(ctx context.Context) ([]model.So
 			&song.Title,
 			&song.Artist,
 			&song.Album,
+			&song.ReleaseDate,
 			&song.Genre,
 			&song.CoverURI,
 			&song.PreviewURI,

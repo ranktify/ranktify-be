@@ -22,5 +22,6 @@ func RankingsRoutes(group *gin.RouterGroup, db *sql.DB) {
 		rankings.GET("/ranked-songs", rankingsHandler.GetRankedSongs)
 		rankings.GET("/friends-ranked-songs", rankingsHandler.GetFriendsRankedSongs)
 		rankings.GET("/friends-songs", rankingsHandler.GetFriendsRankedSongsWithNoUserRank)
+		rankings.GET("/top-weekly", rankingsHandler.GetTopWeeklyTracks)
 	}
 }

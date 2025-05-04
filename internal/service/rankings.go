@@ -42,7 +42,6 @@ func (s *RankingsService) GetFriendsRankedSongsWithNoUserRank(userID uint64) (in
 	return http.StatusOK, content{"User's friends songs": rankings}
 }
 
-// GetTopWeeklyRankedSongs
 func (s *RankingsService) GetTopWeeklyRankedSongs(ctx context.Context) ([]model.Song, error) {
 	songs, err := s.RankingsDAO.GetTopWeeklyRankedSongs(ctx)
 	if err != nil {
