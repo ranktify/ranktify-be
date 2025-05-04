@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -144,4 +145,64 @@ func (dao *FriendsDAO) DeleteFriendRequest(requestID uint64) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+type topSongsStruct struct {
+	model.Song
+	AvgRank      float64 `json:"avg_rank"`
+	RatingsCount int     `json:"rating_count"`
+}
+
+func (dao *FriendsDAO) GetTopNTracksAmongFriends(ctx context.Context, userID uint64, limit int) ([]topSongsStruct, error) {
+	query := `
+		SELECT
+		s.song_id,
+		s.title,
+		s.artist,
+		cover_uri,
+		preview_uri,
+		AVG(r.rank) AS avg_rank,
+		COUNT(*)    AS ratings_count
+		FROM friends f
+		JOIN rankings r
+		ON (
+				(f.user_id   = $1 AND f.friend_id = r.user_id)
+			OR (f.friend_id = $1 AND f.user_id   = r.user_id)
+			)
+		JOIN songs s
+		ON s.song_id = r.song_id
+		GROUP BY
+		s.song_id,
+		s.title,
+		s.artist
+		ORDER BY
+		avg_rank      DESC,
+		ratings_count DESC
+		LIMIT $2;
+    `
+
+	rows, err := dao.DB.QueryContext(ctx, query, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var topSongs []topSongsStruct
+	for rows.Next() {
+
+		var topSong topSongsStruct
+		if err := rows.Scan(
+			&topSong.SongID,
+			&topSong.Title,
+			&topSong.Artist,
+			&topSong.CoverURI,
+			&topSong.PreviewURI,
+			&topSong.AvgRank,
+			&topSong.RatingsCount,
+		); err != nil {
+			return nil, err
+		}
+		topSongs = append(topSongs, topSong)
+	}
+	return topSongs, nil
 }

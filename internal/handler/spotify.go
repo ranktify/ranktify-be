@@ -195,5 +195,4 @@ func (h *SpotifyHandler) GetRandomSongsByRandomGenreToRank(c *gin.Context) {
 		"genre": randomGenre,
 		"songs": songs,
 	})
-
 }

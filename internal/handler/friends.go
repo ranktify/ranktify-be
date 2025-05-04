@@ -166,3 +166,24 @@ func (h *FriendHandler) DeleteFriendRequest(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Friend request canceled successfully"})
 }
+
+func (h *FriendHandler) GetTop5TracksAmongFriends(c *gin.Context) {
+	userIDAny, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDAny.(uint64)
+
+	topTracks, err := h.DAO.GetTopNTracksAmongFriends(c.Request.Context(), userID, 5)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve top tracks among friends"})
+		return
+	}
+	if topTracks == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No top tracks found among friends"})
+		return
+	}
+
+	c.JSON(http.StatusOK, topTracks)
+}

@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/ranktify/ranktify-be/internal/dao"
+	"github.com/ranktify/ranktify-be/internal/model"
 )
 
 type RankingsService struct {
@@ -38,4 +40,12 @@ func (s *RankingsService) GetFriendsRankedSongsWithNoUserRank(userID uint64) (in
 		return http.StatusNotFound, content{"error": "Failed to retrieve rankings"}
 	}
 	return http.StatusOK, content{"User's friends songs": rankings}
+}
+
+func (s *RankingsService) GetTopWeeklyRankedSongs(ctx context.Context) ([]model.Song, error) {
+	songs, err := s.RankingsDAO.GetTopWeeklyRankedSongs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return songs, nil
 }

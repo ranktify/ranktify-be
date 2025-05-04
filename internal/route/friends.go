@@ -16,6 +16,7 @@ func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
 	friends := group.Group("/friends")
 	{
 		friends.Use(middleware.AuthMiddleware())
+		friends.GET("/top-tracks", friendsHandler.GetTop5TracksAmongFriends)
 		// Routes to manage Friends
 		friends.GET("/:user_id", friendsHandler.GetFriends)
 		friends.DELETE("/:user_id/:friend_id", friendsHandler.DeleteFriendByID)
