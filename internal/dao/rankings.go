@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"time"
+	"fmt"
 
 	"github.com/ranktify/ranktify-be/internal/model"
 )
@@ -159,27 +160,10 @@ func (dao *RankingsDao) GetTopWeeklyRankedSongs(ctx context.Context) ([]model.So
 	return songs, nil
 }
 
-func (dao *RankingsDao) CheckIfSongIsRanked(spotifyId string, userID uint64) (bool, error) {
-	var exists bool
-	err := dao.DB.QueryRow(`
-        SELECT EXISTS (
-            SELECT 1
-              FROM rankings r
-              JOIN songs    s ON s.song_id = r.song_id
-             WHERE s.spotify_id = $1
-               AND r.user_id   = $2
-        );
-    `, spotifyId, userID).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
 func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]map[string]interface{}, error) {
 	query := `
 		SELECT DISTINCT
-			r.song_id,
+		r.song_id,
 			r.ranking_id,
 			r.user_id,
 			r.rank,
@@ -192,17 +176,17 @@ func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]ma
 			s.cover_uri,
 			s.preview_uri,
 			s.created_at
-		FROM friends f
+			FROM friends f
 		JOIN users u ON
-			(f.user_id = $1 AND u.id = f.friend_id)
-			OR (f.friend_id = $1 AND u.id = f.user_id)
+		(f.user_id = $1 AND u.id = f.friend_id)
+		OR (f.friend_id = $1 AND u.id = f.user_id)
 		JOIN rankings r ON r.user_id = u.id
 		JOIN songs s ON s.song_id = r.song_id
 		WHERE r.song_id NOT IN (
 			SELECT song_id FROM rankings WHERE user_id = $1
-		)
-		LIMIT 5;
-	`
+			)
+			LIMIT 5;
+			`
 	rows, err := dao.DB.Query(query, userID)
 	if err != nil {
 		return nil, err
@@ -242,4 +226,61 @@ func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]ma
 	}
 
 	return results, nil
+}
+func (dao *RankingsDao) CheckIfSongIsRanked(spotifyId string, userID uint64) (bool, error) {
+	var exists bool
+	err := dao.DB.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1
+			  FROM rankings r
+			  JOIN songs    s ON s.song_id = r.song_id
+			 WHERE s.spotify_id = $1
+			   AND r.user_id   = $2
+		);
+	`, spotifyId, userID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (dao *RankingsDao) RankSong(songID uint64, userID uint64, rank int) error {
+	query := `
+		INSERT INTO rankings (song_id, user_id, rank, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
+	`
+	_, err := dao.DB.Exec(query, songID, userID, rank)
+	if err != nil {
+		return fmt.Errorf("error ranking song: %v", err)
+	}
+	return nil
+}
+
+func (dao *RankingsDao) DeleteRanking(rankingID uint64) error {
+	query := `
+		DELETE FROM rankings 
+		WHERE ranking_id = $1;
+	`
+	result, err := dao.DB.Exec(query, rankingID)
+	if err != nil {
+		return fmt.Errorf("error deleting ranking: %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error checking rows affected (Rankings): %v", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func (dao *RankingsDao) UpdateRanking(rankingID uint64, rank int) error {
+	query := `
+		UPDATE rankings
+		SET rank = $2
+		WHERE ranking_id = $1;
+	`
+	_, err := dao.DB.Exec(query, rankingID, rank)
+	return err
 }
