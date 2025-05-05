@@ -24,14 +24,13 @@ type Config struct {
 func loadConfig() (*Config, error) {
 	//load env variables
 	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Error loading .env: %s", err)
+		log.Printf("No .env file found; relying on OS environment variables")
 	}
 
 	// Parse the env variable to a config struct
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
-		log.Fatalf("Error parsing env to Config struct: %s", err)
-		return nil, err
+		return nil, fmt.Errorf("Error parsing env to Config struct: %s", err)
 	}
 
 	return cfg, nil
