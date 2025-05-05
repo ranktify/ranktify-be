@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"time"
+
 	"github.com/ranktify/ranktify-be/internal/model"
 )
 
@@ -206,3 +208,55 @@ func (dao *RankingsDao) UpdateRanking(rankingID uint64, rank int) error {
 	_, err := dao.DB.Exec(query, rankingID, rank)
 	return err
 }
+
+func (dao *RankingsDao) StoreSongInDB(spotifyID string, title string, artist *string, album *string,
+	releaseDate *time.Time, genre *string, coverURI *string, previewURI *string) error {
+	query := `
+		INSERT INTO songs (spotify_id, title, artist, album, release_date,
+			genre, cover_uri, preview_uri, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+	`
+	_, err := dao.DB.Exec(query, spotifyID, title, artist, album, releaseDate, genre, coverURI, previewURI)
+	if err != nil {
+		return fmt.Errorf("error storing song: %v", err)
+	}
+	return nil
+}
+
+func (dao *RankingsDao) GetSongBySpotifyID(spotifyID string) (model.Song, error) {
+    var song model.Song
+    const query = `
+        SELECT
+            song_id,
+            spotify_id,
+            title,
+            artist,
+            album,
+            release_date,
+            genre,
+            cover_uri,
+            preview_uri,
+            created_at
+        FROM songs
+        WHERE spotify_id = $1
+    `
+
+    err := dao.DB.QueryRow(query, spotifyID).Scan(
+        &song.SongID,
+        &song.SpotifyID,
+        &song.Title,
+        &song.Artist,
+        &song.Album,
+        &song.ReleaseDate,
+        &song.Genre,
+        &song.CoverURI,
+        &song.PreviewURI,
+        &song.CreatedAt,
+    )
+    if err != nil {
+        return model.Song{}, fmt.Errorf("GetSongBySpotifyID: %w", err)
+    }
+
+    return song, nil
+}
+
