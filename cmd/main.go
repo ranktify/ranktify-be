@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -45,6 +46,11 @@ func main() {
 		route.RankingsRoutes(mainGroup, db)
 		route.SongRecommendationRoutes(mainGroup, db)
 	}
-
-	router.Run("localhost:8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	if err := router.Run(":" + port); err != nil {
+		panic(err)
+	}
 }
