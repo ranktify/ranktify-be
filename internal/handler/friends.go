@@ -37,12 +37,13 @@ func (h *FriendHandler) GetFriends(c *gin.Context) {
 }
 
 func (h *FriendHandler) GetFriendRequests(c *gin.Context) {
-	receiverID, err := strconv.ParseUint(c.Param("receiver_id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver ID"})
+	rawUserID, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	friendRequests, friendRequestCount, err := h.DAO.GetFriendRequests(receiverID)
+	userID := rawUserID.(uint64)
+	friendRequests, friendRequestCount, err := h.DAO.GetFriendRequests(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friend requests"})
 		return
