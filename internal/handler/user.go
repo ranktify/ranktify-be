@@ -83,3 +83,22 @@ func (h *UserHandler) DeleteUserByID(c *gin.Context) {
 	statusCode, content := h.Service.DeleteUserByID(userID)
 	c.JSON(statusCode, content)
 }
+
+func (h *UserHandler) SearchUser(c *gin.Context) {
+	username := c.Param("username")
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username can't be empty"})
+		return
+	}
+
+	statusCode, users := h.Service.SearchUser(username)
+	if statusCode == http.StatusNotFound {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No users found"})
+		return
+	}
+	if statusCode == http.StatusInternalServerError {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search users"})
+		return
+	}
+	c.JSON(statusCode, users)
+}

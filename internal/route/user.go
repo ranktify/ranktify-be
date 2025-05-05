@@ -28,5 +28,6 @@ func UserRoutes(group *gin.RouterGroup, db *sql.DB) {
 		users.GET("/", userHandler.GetAllUsers)
 		users.PUT("/:id", userHandler.UpdateUserByID)
 		users.DELETE("/:id", userHandler.DeleteUserByID)
+		users.GET("/search/:username", userHandler.SearchUser)
 	}
 }

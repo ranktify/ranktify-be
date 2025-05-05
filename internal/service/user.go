@@ -148,3 +148,15 @@ func (s *UserService) DeleteUserByID(userID uint64) (int, content) {
 
 	return http.StatusOK, content{"message": "User deleted successfully"}
 }
+
+func (s *UserService) SearchUser(username string) (int, []model.User) {
+	users, err := s.UserDAO.SearchForUsername(username)
+	if err != nil {
+		fmt.Println(err.Error())
+		return http.StatusInternalServerError, nil
+	}
+	if len(users) == 0 {
+		return http.StatusNotFound, nil
+	}
+	return http.StatusOK, users
+}
