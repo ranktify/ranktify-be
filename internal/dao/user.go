@@ -140,3 +140,51 @@ func (dao *UserDAO) DeleteUserByID(id uint64) error {
 	}
 	return nil
 }
+
+func (dao *UserDAO) SearchForUsername(username string) ([]model.User, error) {
+	query := `
+		SELECT 
+			id, 
+			username, 
+			password, 
+			first_name, 
+			last_name, 
+			email, 
+			spotify_id, 
+			spotify_display_name,
+			spotify_profile_uri,
+			spotify_profile_picture_uri
+		FROM 
+			public.users
+		WHERE 
+			username ILIKE $1
+		LIMIT 5
+	`
+	usernamePattern := username + "%" //starts with username
+	rows, err := dao.DB.Query(query, usernamePattern)
+	if err != nil {
+		return nil, err
+	}
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		err := rows.Scan(
+			&user.Id,
+			&user.Username,
+			&user.Password,
+			&user.FirstName,
+			&user.LastName,
+			&user.Email,
+			&user.SpotifyID,
+			&user.SpotifyDisplayName,
+			&user.SpotifyProfileURI,
+			&user.SpotifyProfilePictureURI,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
