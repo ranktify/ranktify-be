@@ -6,8 +6,6 @@ import (
 	"time"
 	"fmt"
 
-	"time"
-
 	"github.com/ranktify/ranktify-be/internal/model"
 )
 
