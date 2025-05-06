@@ -37,3 +37,24 @@ func (h *ImpressionHandler) GetImpressionByLabel(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+func (h *ImpressionHandler) UpsertImpressionStats(c *gin.Context) {
+	label := c.Param("label")
+	if label == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "label is required"})
+		return
+	}
+	var imp model.ImpressionStats
+	if err := c.ShouldBindJSON(&imp); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	imp.ImpressionLabel = label
+
+	if err := h.DAO.UpsertImpressionStats(&imp); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Impression stats updated successfully"})
+}

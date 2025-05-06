@@ -41,13 +41,13 @@ func (dao *ImpressionDAO) GetImpressionStatsByLabel(label string) (*model.Impres
 	return &impression, nil
 }
 
-func (dao *ImpressionDAO) UpdateImpressionStats(impression *model.ImpressionStats) error {
+func (dao *ImpressionDAO) UpsertImpressionStats(impression *model.ImpressionStats) error {
 	query := `
 		INSERT INTO impression_stats (impression_label, impressions, clicks)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (impression_label)
 		DO UPDATE
-			SET impressions = impression_stats.impression + $2,
+			SET impressions = impression_stats.impressions + $2,
 				clicks      = impression_stats.clicks + $3,
 				created_at  = NOW();
 	`
