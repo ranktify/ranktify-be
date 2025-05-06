@@ -89,8 +89,14 @@ func (h *SongRecommendationHandler) SongRecommendation(c *gin.Context) {
 		friendsSongs = friendsSongs[0:5]
 		recommendedSongs = recommendedSongs[0:5]
 	} else {
-		recommendedSongs = recommendedSongs[0:(10 - len(friendsSongs))]
+		limit := 10 - len(friendsSongs)
+		if limit > len(recommendedSongs) {
+			limit = len(recommendedSongs)
+		}
+		recommendedSongs = recommendedSongs[:limit]
+		// recommendedSongs = recommendedSongs[0:(10 - len(friendsSongs))]
 	}
+
 	var chosenSongs []model.Song
 	for _, song := range recommendedSongs {
 		h.RankingsDAO.StoreSongInDB(
