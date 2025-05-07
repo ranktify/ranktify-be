@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -94,4 +95,17 @@ func (h *RankingsHandler) UpdateRanking(c *gin.Context) {
 	}
 	statusCode, content := h.Service.UpdateRanking(rankingID, rank)
 	c.JSON(statusCode, content)
+}
+
+func (h *RankingsHandler) GetTopWeeklyTracks(c *gin.Context) {
+	songs, err := h.Service.GetTopWeeklyRankedSongs(c.Request.Context())
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No tracks found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve top weekly tracks"})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, songs)
 }

@@ -37,12 +37,13 @@ func (h *FriendHandler) GetFriends(c *gin.Context) {
 }
 
 func (h *FriendHandler) GetFriendRequests(c *gin.Context) {
-	receiverID, err := strconv.ParseUint(c.Param("receiver_id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver ID"})
+	rawUserID, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	friendRequests, friendRequestCount, err := h.DAO.GetFriendRequests(receiverID)
+	userID := rawUserID.(uint64)
+	friendRequests, friendRequestCount, err := h.DAO.GetFriendRequests(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friend requests"})
 		return
@@ -165,4 +166,25 @@ func (h *FriendHandler) DeleteFriendRequest(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Friend request canceled successfully"})
+}
+
+func (h *FriendHandler) GetTop5TracksAmongFriends(c *gin.Context) {
+	userIDAny, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDAny.(uint64)
+
+	topTracks, err := h.DAO.GetTopNTracksAmongFriends(c.Request.Context(), userID, 5)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve top tracks among friends"})
+		return
+	}
+	if topTracks == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No top tracks found among friends"})
+		return
+	}
+
+	c.JSON(http.StatusOK, topTracks)
 }

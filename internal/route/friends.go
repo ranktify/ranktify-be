@@ -16,6 +16,7 @@ func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
 	friends := group.Group("/friends")
 	{
 		friends.Use(middleware.AuthMiddleware())
+		friends.GET("/top-tracks", friendsHandler.GetTop5TracksAmongFriends)
 		// Routes to manage Friends
 		friends.GET("/:user_id", friendsHandler.GetFriends)
 		friends.DELETE("/:user_id/:friend_id", friendsHandler.DeleteFriendByID)
@@ -25,6 +26,6 @@ func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
 		friends.DELETE("/decline/:request_id/:sender_id/:receiver_id", friendsHandler.DeclineFriendRequest)
 		friends.DELETE("/friend-request/:user_id/:request_id", friendsHandler.DeleteFriendRequest)
 		// User Notifications
-		friends.GET("/friend-requests/:receiver_id", friendsHandler.GetFriendRequests)
+		friends.GET("/friend-requests", friendsHandler.GetFriendRequests)
 	}
 }

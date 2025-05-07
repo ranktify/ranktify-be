@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -83,6 +84,100 @@ func (dao *RankingsDao) GetFriendsRankedSongs(userID uint64) ([]model.Rankings, 
 	return rankings, nil
 }
 
+func (dao *RankingsDao) GetTopWeeklyRankedSongs(ctx context.Context) ([]model.Song, error) {
+	query := `
+		-- get all the rank songs and their average rank and rating 
+		WITH RankedSongs AS (
+			SELECT
+				song_id,
+				AVG(rank) AS avg_rank,
+				COUNT(*)  AS ratings_count
+			FROM rankings
+			WHERE 
+				updated_at >= $1 AND updated_at < $2
+			GROUP BY song_id
+			ORDER BY
+				avg_rank DESC,      -- higher average rank is better
+				ratings_count DESC -- Higher rating count breaks ties (more popular)
+			LIMIT 5
+		)
+		SELECT
+			s.song_id,
+			s.spotify_id,
+			s.title,
+			s.artist,
+			s.album,  
+			s.release_date,
+			s.genre,  
+			s.cover_uri,
+			s.preview_uri
+		FROM songs s
+		JOIN RankedSongs rs ON s.song_id = rs.song_id
+		ORDER BY
+			rs.avg_rank DESC,      
+			rs.ratings_count DESC;
+	`
+	now := time.Now()
+	// today at midnight
+	todayMid := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	// compute how many days since Monday:
+	// (Weekday()+6)%7 maps Monday→0, Tuesday→1, … Sunday→6
+	offset := (int(now.Weekday()) + 6) % 7
+
+	// this week’s Monday 00:00
+	startThisWeek := todayMid.AddDate(0, 0, -offset)
+
+	// last week’s Monday 00:00
+	startLastWeek := startThisWeek.AddDate(0, 0, -7)
+
+	rows, err := dao.DB.QueryContext(ctx, query, startLastWeek, startThisWeek)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var songs []model.Song
+	for rows.Next() {
+		var song model.Song
+		if err := rows.Scan(
+			&song.SongID,
+			&song.SpotifyID,
+			&song.Title,
+			&song.Artist,
+			&song.Album,
+			&song.ReleaseDate,
+			&song.Genre,
+			&song.CoverURI,
+			&song.PreviewURI,
+		); err != nil {
+			return nil, err
+		}
+		songs = append(songs, song)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return songs, nil
+}
+
+func (dao *RankingsDao) CheckIfSongIsRanked(spotifyId string, userID uint64) (bool, error) {
+	var exists bool
+	err := dao.DB.QueryRow(`
+        SELECT EXISTS (
+            SELECT 1
+              FROM rankings r
+              JOIN songs    s ON s.song_id = r.song_id
+             WHERE s.spotify_id = $1
+               AND r.user_id   = $2
+        );
+    `, spotifyId, userID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]map[string]interface{}, error) {
 	query := `
 		SELECT DISTINCT ON (s.song_id)
@@ -152,23 +247,6 @@ func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]ma
 	return results, nil
 }
 
-func (dao *RankingsDao) CheckIfSongIsRanked(spotifyId string, userID uint64) (bool, error) {
-	var exists bool
-	err := dao.DB.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1
-			  FROM rankings r
-			  JOIN songs    s ON s.song_id = r.song_id
-			 WHERE s.spotify_id = $1
-			   AND r.user_id   = $2
-		);
-	`, spotifyId, userID).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
 func (dao *RankingsDao) RankSong(songID uint64, userID uint64, rank int) error {
 	query := `
 		INSERT INTO rankings (song_id, user_id, rank, created_at, updated_at)
@@ -225,8 +303,8 @@ func (dao *RankingsDao) StoreSongInDB(spotifyID string, title string, artist *st
 }
 
 func (dao *RankingsDao) GetSongBySpotifyID(spotifyID string) (model.Song, error) {
-    var song model.Song
-    const query = `
+	var song model.Song
+	const query = `
         SELECT
             song_id,
             spotify_id,
@@ -242,22 +320,21 @@ func (dao *RankingsDao) GetSongBySpotifyID(spotifyID string) (model.Song, error)
         WHERE spotify_id = $1
     `
 
-    err := dao.DB.QueryRow(query, spotifyID).Scan(
-        &song.SongID,
-        &song.SpotifyID,
-        &song.Title,
-        &song.Artist,
-        &song.Album,
-        &song.ReleaseDate,
-        &song.Genre,
-        &song.CoverURI,
-        &song.PreviewURI,
-        &song.CreatedAt,
-    )
-    if err != nil {
-        return model.Song{}, fmt.Errorf("GetSongBySpotifyID: %w", err)
-    }
+	err := dao.DB.QueryRow(query, spotifyID).Scan(
+		&song.SongID,
+		&song.SpotifyID,
+		&song.Title,
+		&song.Artist,
+		&song.Album,
+		&song.ReleaseDate,
+		&song.Genre,
+		&song.CoverURI,
+		&song.PreviewURI,
+		&song.CreatedAt,
+	)
+	if err != nil {
+		return model.Song{}, fmt.Errorf("GetSongBySpotifyID: %w", err)
+	}
 
-    return song, nil
+	return song, nil
 }
-
