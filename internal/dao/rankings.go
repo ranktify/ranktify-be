@@ -201,6 +201,7 @@ func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]ma
 		WHERE r.song_id NOT IN (
 			SELECT song_id FROM rankings WHERE user_id = $1
 		)
+		GROUP_BY r.song_id
 		LIMIT 5;
 	`
 	rows, err := dao.DB.Query(query, userID)
