@@ -81,6 +81,14 @@ CREATE TABLE spotify_refresh_tokens (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE impression_stats (
+  impression_label TEXT PRIMARY KEY UNIQUE NOT NULL,
+  impressions      BIGINT             NOT NULL DEFAULT 0,
+  clicks           BIGINT             NOT NULL DEFAULT 0,
+  created_at       TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+
 --give ownership to ranktifyUser
 ALTER TABLE users OWNER TO ranktifyUser;
 ALTER TABLE songs OWNER TO ranktifyUser;
@@ -89,3 +97,4 @@ ALTER TABLE friends OWNER TO ranktifyUser;
 ALTER TABLE rankings OWNER TO ranktifyUser;
 ALTER TABLE jwt_refresh_tokens OWNER TO ranktifyUser;
 ALTER TABLE spotify_refresh_tokens OWNER TO ranktifyUser;
+ALTER TABLE impression_stats OWNER TO ranktifyUser;
