@@ -85,9 +85,37 @@ func (h *SongRecommendationHandler) SongRecommendation(c *gin.Context) {
 		friendsSongs[i], friendsSongs[j] = friendsSongs[j], friendsSongs[i]
 	})
 
-	// recommendedSongs = recommendedSongs[
+	if len(friendsSongs) >= 5 {
+		friendsSongs = friendsSongs[0:5]
+		recommendedSongs = recommendedSongs[0:5]
+	} else {
+		limit := 10 - len(friendsSongs)
+		if limit > len(recommendedSongs) {
+			limit = len(recommendedSongs)
+		}
+		recommendedSongs = recommendedSongs[:limit]
+		// recommendedSongs = recommendedSongs[0:(10 - len(friendsSongs))]
+	}
+
+	var chosenSongs []model.Song
+	for _, song := range recommendedSongs {
+		h.RankingsDAO.StoreSongInDB(
+			song.SpotifyID,
+			song.Title,
+			song.Artist,
+			song.Album,
+			song.ReleaseDate,
+			song.Genre,
+			song.CoverURI,
+			song.PreviewURI,
+		)
+		songWithID, _ := h.RankingsDAO.GetSongBySpotifyID(song.SpotifyID)
+		chosenSongs = append(chosenSongs, songWithID)
+
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"Recommended Songs":  recommendedSongs,
+		"Recommended Songs":  chosenSongs,
 		"Songs From Friends": friendsSongs,
 	})
 
