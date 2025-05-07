@@ -9,6 +9,5 @@ import (
 func main() {
 	db := config.SetupConnection()
 
-	// reset the streaks with dao methods to be develop
 	fmt.Println(db)
 }

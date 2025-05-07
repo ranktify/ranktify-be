@@ -6,7 +6,7 @@ on:
     - cron: '0 4 * * *'       # Every day at 12:00AM AST (UTC-4)
 
 jobs:
-  run-db-job:
+  setup:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Run DB operation
+      - name: Streak reset
         env:
           DB_NAME:     ${{ secrets.DB_NAME }}
           DB_USER:     ${{ secrets.DB_USER }}
