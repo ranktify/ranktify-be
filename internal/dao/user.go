@@ -141,7 +141,7 @@ func (dao *UserDAO) DeleteUserByID(id uint64) error {
 	return nil
 }
 
-func (dao *UserDAO) SearchForUsername(username string) ([]model.User, error) {
+func (dao *UserDAO) SearchForUsername(userID uint64, username string) ([]model.User, error) {
 	query := `
 		SELECT 
 			id, 
@@ -157,11 +157,11 @@ func (dao *UserDAO) SearchForUsername(username string) ([]model.User, error) {
 		FROM 
 			public.users
 		WHERE 
-			username ILIKE $1
+			username ILIKE $2 AND users.id != $1
 		LIMIT 5
 	`
 	usernamePattern := username + "%" //starts with username
-	rows, err := dao.DB.Query(query, usernamePattern)
+	rows, err := dao.DB.Query(query, userID, usernamePattern)
 	if err != nil {
 		return nil, err
 	}
