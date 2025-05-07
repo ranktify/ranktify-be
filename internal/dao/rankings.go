@@ -85,8 +85,8 @@ func (dao *RankingsDao) GetFriendsRankedSongs(userID uint64) ([]model.Rankings, 
 
 func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]map[string]interface{}, error) {
 	query := `
-		SELECT DISTINCT
-		r.song_id,
+		SELECT DISTINCT ON (s.song_id)
+			r.song_id,
 			r.ranking_id,
 			r.user_id,
 			r.rank,
@@ -101,15 +101,16 @@ func (dao *RankingsDao) GetFriendsRankedSongsWithNoUserRank(userID uint64) ([]ma
 			s.created_at
 			FROM friends f
 		JOIN users u ON
-		(f.user_id = $1 AND u.id = f.friend_id)
-		OR (f.friend_id = $1 AND u.id = f.user_id)
+			(f.user_id = $1 AND u.id = f.friend_id)
+			OR (f.friend_id = $1 AND u.id = f.user_id)
 		JOIN rankings r ON r.user_id = u.id
 		JOIN songs s ON s.song_id = r.song_id
 		WHERE r.song_id NOT IN (
 			SELECT song_id FROM rankings WHERE user_id = $1
-			)
-			LIMIT 5;
-			`
+		)
+		ORDER BY s.song_id, r.rank DESC  -- pick the friend who ranked it highest
+		LIMIT 5;
+		`
 	rows, err := dao.DB.Query(query, userID)
 	if err != nil {
 		return nil, err
