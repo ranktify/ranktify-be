@@ -51,6 +51,10 @@ func SetupConnection() *sql.DB {
 	if err != nil {
 		log.Fatalf("Database connection failed, details: %s", err)
 	}
+	// ping the database first
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Database connection failed, can't ping DB: %s", err)
+	}
 
 	return db
 }

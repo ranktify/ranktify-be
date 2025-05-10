@@ -46,6 +46,7 @@ func main() {
 		route.RankingsRoutes(mainGroup, db)
 		route.SongRecommendationRoutes(mainGroup, db)
 		route.StreakRoutes(mainGroup, db)
+		route.ImpressionRoutes(mainGroup, db)
 	}
 	port := os.Getenv("PORT")
 	if port == "" {

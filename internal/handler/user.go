@@ -85,13 +85,19 @@ func (h *UserHandler) DeleteUserByID(c *gin.Context) {
 }
 
 func (h *UserHandler) SearchUser(c *gin.Context) {
+	rawUserID, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	userID := rawUserID.(uint64)
+
 	username := c.Param("username")
 	if username == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Username can't be empty"})
 		return
 	}
-
-	statusCode, users := h.Service.SearchUser(username)
+	statusCode, users := h.Service.SearchUser(userID, username)
 	if statusCode == http.StatusNotFound {
 		c.JSON(http.StatusNotFound, gin.H{"error": "No users found"})
 		return
