@@ -101,17 +101,12 @@ func (h *FriendHandler) AcceptFriendRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
 		return
 	}
-	senderID, err := strconv.ParseUint(c.Param("sender_id"), 10, 64)
+	friendRequest, err := h.DAO.GetFriendRequestsByRequestID(requestID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user/sender ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get the friend request"})
 		return
 	}
-	receiverID, err := strconv.ParseUint(c.Param("receiver_id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user/receiver ID"})
-		return
-	}
-	err = h.DAO.AcceptFriendRequest(senderID, receiverID)
+	err = h.DAO.AcceptFriendRequest(friendRequest.SenderID, friendRequest.ReceiverID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept the friend request"})
 		return
@@ -129,16 +124,6 @@ func (h *FriendHandler) DeclineFriendRequest(c *gin.Context) {
 	requestID, err := strconv.ParseUint(c.Param("request_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
-		return
-	}
-	_, err = strconv.ParseUint(c.Param("sender_id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user/sender ID"})
-		return
-	}
-	_, err = strconv.ParseUint(c.Param("receiver_id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user/receiver ID"})
 		return
 	}
 	err = h.DAO.DeleteFriendRequest(requestID)

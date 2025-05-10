@@ -18,13 +18,13 @@ func FriendRoutes(group *gin.RouterGroup, db *sql.DB) {
 		friends.Use(middleware.AuthMiddleware())
 		friends.GET("/top-tracks", friendsHandler.GetTop5TracksAmongFriends)
 		// Routes to manage Friends
-		friends.GET("/:user_id", friendsHandler.GetFriends)
-		friends.DELETE("/:user_id/:friend_id", friendsHandler.DeleteFriendByID)
+		friends.GET("/:user_id", friendsHandler.GetFriends)  
+		friends.DELETE("/:user_id/:friend_id", friendsHandler.DeleteFriendByID) 
 		// Routes to manage Friend Requests
-		friends.POST("/send/:user_id/:receiver_id", friendsHandler.SendFriendRequest)
-		friends.POST("/accept/:request_id/:sender_id/:receiver_id", friendsHandler.AcceptFriendRequest)
-		friends.DELETE("/decline/:request_id/:sender_id/:receiver_id", friendsHandler.DeclineFriendRequest)
-		friends.DELETE("/friend-request/:user_id/:request_id", friendsHandler.DeleteFriendRequest)
+		friends.POST("/send/:user_id/:receiver_id", friendsHandler.SendFriendRequest)  
+		friends.POST("/accept/:request_id", friendsHandler.AcceptFriendRequest) 
+		friends.DELETE("/decline/:request_id", friendsHandler.DeclineFriendRequest) 
+		friends.DELETE("/friend-request/:request_id", friendsHandler.DeleteFriendRequest)
 		// User Notifications
 		friends.GET("/friend-requests", friendsHandler.GetFriendRequests)
 	}
