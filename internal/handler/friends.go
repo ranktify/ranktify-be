@@ -53,6 +53,23 @@ func (h *FriendHandler) GetFriendRequests(c *gin.Context) {
 		"friend_request_count": friendRequestCount})
 }
 
+func (h *FriendHandler) GetFriendRequestsSent(c *gin.Context) {
+	rawUserID, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	userID := rawUserID.(uint64)
+	friendRequests, friendRequestCount, err := h.DAO.GetFriendRequestsSent(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friend requests sent by current user"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"friend_request":       friendRequests,
+		"friend_request_count": friendRequestCount})
+}
+
 func (h *FriendHandler) DeleteFriendByID(c *gin.Context) {
 	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
 	if err != nil {

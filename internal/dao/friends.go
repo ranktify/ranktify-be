@@ -89,6 +89,40 @@ func (dao *FriendsDAO) GetFriendRequests(receiverID uint64) ([]model.FriendReque
 	return friendRequests, friendCount, nil
 }
 
+func (dao *FriendsDAO) GetFriendRequestsSent(receiverID uint64) ([]model.FriendRequests, int, error) {
+	query := `
+		SELECT request_id, sender_id, receiver_id, request_date, status
+		FROM friend_requests
+		WHERE sender_id = $1
+`
+	rows, err := dao.DB.Query(query, receiverID)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var friendRequests []model.FriendRequests
+	for rows.Next() {
+		var friendRequest model.FriendRequests
+		if err := rows.Scan(
+			&friendRequest.RequestID,
+			&friendRequest.SenderID,
+			&friendRequest.ReceiverID,
+			&friendRequest.RequestDate,
+			&friendRequest.Status,
+		); err != nil {
+			return nil, 0, err
+		}
+		friendRequests = append(friendRequests, friendRequest)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	friendCount := len(friendRequests)
+
+	return friendRequests, friendCount, nil
+}
+
 func (dao *FriendsDAO) GetFriendRequestsByRequestID(requestID uint64) (model.FriendRequests, error) {
 	query := `
 		SELECT request_id, sender_id, receiver_id, request_date, status
