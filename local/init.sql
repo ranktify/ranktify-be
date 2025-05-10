@@ -1,3 +1,5 @@
+SET TIME ZONE 'America/Puerto_Rico'
+
 -- Users Table
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -79,6 +81,17 @@ CREATE TABLE spotify_refresh_tokens (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     refresh_token TEXT NOT NULL, 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+create table streaks(
+    user_id          integer                 not null
+        primary key
+        references users,
+    streak_count     integer   default 0     not null,
+    daily_count      integer   default 0     not null,
+    last_count_date  date,
+    last_streak_date date,
+    updated_at       timestamp default now() not null
 );
 
 --give ownership to ranktifyUser
