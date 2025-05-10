@@ -3,7 +3,6 @@ package handler
 import (
 	"math/rand"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ranktify/ranktify-be/internal/dao"
@@ -35,19 +34,14 @@ func (h *SongRecommendationHandler) SongRecommendation(c *gin.Context) {
 	}
 	accessToken := rawToken.(string)
 
-	limit, err := strconv.Atoi(c.Param("limit"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
-		return
-	}
-	randomSongs, err := spotify.GetRandomSongs(c.Request.Context(), accessToken, limit)
+	randomSongs, err := spotify.GetRandomSongs(c.Request.Context(), accessToken)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	randomGenre := spotify.GetRandomGenre()
 
-	randomSongsGenre, err := spotify.GetRandomSongsByGenre(c.Request.Context(), accessToken, limit, randomGenre)
+	randomSongsGenre, err := spotify.GetRandomSongsByGenre(c.Request.Context(), accessToken, randomGenre)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -57,7 +51,7 @@ func (h *SongRecommendationHandler) SongRecommendation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	songList := append(randomSongs, randomSongsGenre...)
+	songList := append(*randomSongs, *randomSongsGenre...)
 
 	// Shuffle in-place
 	var recommendedSongs []model.Song

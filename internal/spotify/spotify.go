@@ -28,6 +28,12 @@ var genres = []string{
 	"reggae",
 	"jazz",
 	"classical",
+	"rap",
+	"trap",
+	"metal",
+	"indie%20rock",
+	"alternative%20pop",
+	"alternative%20rock",
 	// Latin Market
 	"reggaeton",
 	"salsa",
@@ -44,6 +50,16 @@ var genres = []string{
 	"latin%20trap",
 }
 
+var wildcards = []string{
+	"%25a%25", "a%25",
+	"%25e%25", "e%25",
+	"%25i%25", "i%25",
+	"%25o%25", "o%25",
+	"%25u%25", "u%25",
+}
+
+var limit int = 50
+
 var (
 	scdnMP3PreviewRegex = regexp.MustCompile(`https://p\.scdn\.co/mp3-preview/[^"' >)]+`)
 
@@ -51,6 +67,41 @@ var (
 		Timeout: 10 * time.Second,
 	}
 )
+
+func FetchRandomSongsByGenre(ctx context.Context, accessToken string, limit int, genre string, query string) ([]model.Song, error) {
+	offset := rand.Intn(limit) + 1
+	market := "US"
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s%%20genre:%%22%s%%22&offset=%d&limit=%d&type=track&market=%s", query, genre, offset, limit, market)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch songs, status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	songs, err := StoreSongs(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store songs")
+	}
+	return songs, nil
+}
 
 func GetRandomGenre() string {
 	index := rand.Intn(len(genres))
@@ -250,15 +301,7 @@ func StoreSongs(body []byte) ([]model.Song, error) {
 	return songs, nil
 }
 
-func GetRandomSongs(ctx context.Context, accessToken string, limit int) ([]model.Song, error) {
-	wildcards := []string{
-		"%25a%25", "a%25",
-		"%25e%25", "e%25",
-		"%25i%25", "i%25",
-		"%25o%25", "o%25",
-		"%25u%25", "u%25",
-	}
-
+func GetRandomSongs(ctx context.Context, accessToken string) (*[]model.Song, error) {
 	query := wildcards[rand.Intn(len(wildcards))]
 	offset := rand.Intn(limit) + 1
 	market := "US"
@@ -293,49 +336,26 @@ func GetRandomSongs(ctx context.Context, accessToken string, limit int) ([]model
 		return nil, fmt.Errorf("failed to store songs")
 	}
 
-	return songs, nil
+	return &songs, nil
 }
 
-func GetRandomSongsByGenre(ctx context.Context, accessToken string, limit int, genre string) ([]model.Song, error) {
-	wildcards := []string{
-		"%25a%25", "a%25",
-		"%25e%25", "e%25",
-		"%25i%25", "i%25",
-		"%25o%25", "o%25",
-		"%25u%25", "u%25",
-	}
+func GetRandomSongsByGenre(ctx context.Context, accessToken string, genre string) (*[]model.Song, error) {
+	randomWildcard := wildcards
+	i := rand.Intn(len(randomWildcard))
 
-	query := wildcards[rand.Intn(len(wildcards))]
-	offset := rand.Intn(limit) + 1
-	market := "US"
+	query1 := randomWildcard[i]
+	randomWildcard = append(randomWildcard[:i], randomWildcard[i+1:]...)
+	query2 := randomWildcard[rand.Intn(len(randomWildcard))]
 
-	url := fmt.Sprintf("https://api.spotify.com/v1/search?q=%s%%20genre:%%22%s%%22&offset=%d&limit=%d&type=track&market=%s", query, genre, offset, limit, market)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	firstBatch, err := FetchRandomSongsByGenre(ctx, accessToken, limit, genre, query1)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get songs by random genre (batch1)")
 	}
-
-	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-	req.Header.Add("Authorization", "Bearer "+accessToken)
-
-	resp, err := http.DefaultClient.Do(req)
+	secondBatch, err := FetchRandomSongsByGenre(ctx, accessToken, limit, genre, query2)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get songs by random genre (batch2)")
 	}
-	defer resp.Body.Close()
+	songs := append(firstBatch, secondBatch...)
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch songs, status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	songs, err := StoreSongs(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to store songs")
-	}
-	return songs, nil
+	return &songs, nil
 }
