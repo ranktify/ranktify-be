@@ -1,3 +1,5 @@
+SET TIME ZONE 'America/Puerto_Rico'
+
 -- Users Table
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -81,13 +83,24 @@ CREATE TABLE spotify_refresh_tokens (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+create table streaks(
+    user_id          integer                 not null
+        primary key
+        references users,
+    streak_count     integer   default 0     not null,
+    daily_count      integer   default 0     not null,
+    last_count_date  date,
+    last_streak_date date,
+    updated_at       timestamp default now() not null
+);
+
+
 CREATE TABLE impression_stats (
   impression_label TEXT PRIMARY KEY UNIQUE NOT NULL,
   impressions      BIGINT             NOT NULL DEFAULT 0,
   clicks           BIGINT             NOT NULL DEFAULT 0,
   created_at       TIMESTAMP NOT NULL DEFAULT NOW()
 );
-
 
 --give ownership to ranktifyUser
 ALTER TABLE users OWNER TO ranktifyUser;
