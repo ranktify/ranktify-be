@@ -10,11 +10,13 @@ import (
 
 type RankingsService struct {
 	RankingsDAO *dao.RankingsDao
+	StreaksDAO  *dao.StreaksDAO
 }
 
-func NewRankingsService(rankingsDao *dao.RankingsDao) *RankingsService {
+func NewRankingsService(rankingsDao *dao.RankingsDao, sDao *dao.StreaksDAO) *RankingsService {
 	return &RankingsService{
 		RankingsDAO: rankingsDao,
+		StreaksDAO:  sDao,
 	}
 }
 
@@ -46,6 +48,9 @@ func (s *RankingsService) RankSong(songID uint64, userID uint64, rank int) (int,
 	err := s.RankingsDAO.RankSong(songID, userID, rank)
 	if err != nil {
 		return http.StatusBadRequest, content{"error": "Failed to rank song"}
+	}
+	if err = s.StreaksDAO.RecordSongRank(context.Background(), userID); err != nil {
+		return http.StatusBadRequest, content{"error": "Failed to record streak"}
 	}
 	return http.StatusOK, content{"Song ranked succesfully as a": rank}
 }
