@@ -13,6 +13,7 @@ import (
 func RankingsRoutes(group *gin.RouterGroup, db *sql.DB) {
 	rankingsService := service.NewRankingsService(
 		dao.NewRankingsDAO(db),
+		dao.NewStreaksDAO(db),
 	)
 	rankingsHandler := handler.NewRankingsHandler(rankingsService)
 
